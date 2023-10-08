@@ -1,0 +1,145 @@
+#ifndef SRV_SOCKET
+#define SRV_SOCKET
+
+#ifdef WIN64
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+
+#  define WIN(exp) exp
+#  define LINUX(exp)
+#else
+#  include <sys/socket.h>
+#  include <sys/types.h>
+#  include <arpa/inet.h>
+#  include <netinet/in.h>
+
+#  define WIN(exp)
+#  define LINUX(exp) exp
+#endif // WIN64
+
+#include <vector>
+#include <string>
+#include <thread>
+
+namespace sys {
+    enum class SocketStatus : uint8_t {
+        up = 0,
+        connected = 1,
+        disconnected = 2,
+        err_init_socket = 3,
+        err_bind_socket = 4,
+        err_connection_socket = 5
+    };
+
+    enum class SocketType : uint8_t {
+        tcp_socket = 0xfe,
+        udp_socket = 0xff
+    };
+
+    enum class ThreadMode : uint32_t {
+        single_thread = 0xfffe,
+        multi_thread  = 0xffff
+    };
+
+    struct ClientConnectionData {
+        uint32_t host;
+        uint16_t port;
+    } __attribute__((packed));
+
+    class SocketServer {
+    private:
+        typedef SocketStatus status;
+        typedef SocketType     type;
+        typedef ThreadMode     mode;
+
+        struct Client;
+
+        status _status;
+        type     _type;
+        mode     _mode;
+
+        #ifdef WIN64
+            typedef SOCKET      Socket_t;
+            typedef sockaddr_in SockIn_t;
+            typedef int32_t    SockLen_t;
+        #else
+            typedef int32_t     Socket_t;
+            typedef sockaddr_in SockIn_t;
+            typedef socklen_t  SockLen_t;
+        #endif // WIN64
+
+        Socket_t srv_socket;
+        SockIn_t srv_header;
+
+        uint16_t port;
+
+        std::vector<Client> listClient;
+
+    public:
+        SocketServer();
+        SocketServer(const uint16_t);
+        SocketServer(const SocketServer&);
+
+        [[nodiscard]] Socket_t                     getServerSocket() const { return this->srv_socket; }
+        [[nodiscard]] SockIn_t                     getServerHeader() const { return this->srv_header; }
+        [[nodiscard]] uint32_t                             getHost() const { return 0x00000000;       }
+        [[nodiscard]] uint16_t                             getPort() const { return this->port;       }
+        [[nodiscard]] ThreadMode                     getThreadMode() const { return this->_mode;      }
+        [[nodiscard]] SocketType                     getSocketType() const { return this->_type;      }
+        [[nodiscard]] SocketStatus                 getSocketStatus() const { return this->_status;    }
+        [[nodiscard]] std::vector<ClientConnectionData> getClients() const;
+
+        void setPort(const uint16_t server_port)          { this-> port = server_port; }
+        void setType(const SocketType& socket_type)       { this->_type = socket_type; }
+        void setThreadType(const ThreadMode& thread_mode) { this->_mode = thread_mode; }
+
+        bool socketInit();
+        bool socketListenConnection();
+        bool connectBy(const uint32_t, const uint16_t);
+
+        bool sendBy(const uint32_t, const uint16_t, const void *, uint32_t);
+        bool sendBy(const uint32_t, const uint16_t, const std::vector<int8_t>&);
+        bool sendBy(const uint32_t, const uint16_t, const std::string&);
+
+        bool sendAll(const void *, uint32_t);
+        bool sendAll(const std::vector<char>&);
+        bool sendAll(const std::string&);
+
+        bool disconnectBy(const uint32_t, const uint16_t);
+        bool disconnectAll();
+
+        uint64_t checkBot();
+        uint64_t sizeListBot();
+
+        ~SocketServer();
+    };
+
+    struct SocketServer::Client {
+    private:
+        Socket_t cli_socket;
+        SockIn_t cli_header;
+
+        type          _type;
+
+        std::vector<int8_t>
+                   cli_data;
+
+    public:
+        [[nodiscard]] std::vector<int8_t> getData() const { return this->cli_data;   }
+        [[nodiscard]] Socket_t          getSocket() const { return this->cli_socket; }
+        [[nodiscard]] SockIn_t          getHeader() const { return this->cli_header; }
+        [[nodiscard]] uint16_t            getPort() const { return htons(this->cli_header.sin_port); }
+        [[nodiscard]] uint32_t            getHost() const { return this->cli_header WIN(.sin_addr.S_un.S_addr)LINUX(.sin_addr.s_addr); }
+
+        void setSocket(const Socket_t client) { this->cli_socket = client; }
+        void setHeader(const SockIn_t client) { this->cli_header = client; }
+
+        bool connectClient();
+
+        bool sendClientData(void *, uint32_t);
+        bool sendClientData(const std::vector<int8_t>&);
+        bool sendClientData(const std::string&);
+    };
+}
+
+#endif // SRV_SOCKET
