@@ -21,6 +21,8 @@
 #include <string>
 #include <thread>
 
+#include <unistd.h>
+
 namespace sys {
     enum class SocketStatus : uint8_t {
         up = 0,
@@ -102,7 +104,7 @@ namespace sys {
         bool sendBy(const uint32_t, const uint16_t, const std::string&);
 
         bool sendAll(const void *, uint32_t);
-        bool sendAll(const std::vector<char>&);
+        bool sendAll(const std::vector<int8_t>&);
         bool sendAll(const std::string&);
 
         bool disconnectBy(const uint32_t, const uint16_t);
@@ -135,6 +137,9 @@ namespace sys {
         void setHeader(const SockIn_t client) { this->cli_header = client; }
 
         bool connectClient();
+        bool disconnectClient();
+
+        bool isConnected();
 
         bool sendClientData(void *, uint32_t);
         bool sendClientData(const std::vector<int8_t>&);

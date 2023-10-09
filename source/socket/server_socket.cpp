@@ -3,6 +3,9 @@
 //
 
 #include "../../include/socket/server_socket.h"
+#include <cstdint>
+#include <sys/socket.h>
+#include <vector>
 
 sys::SocketServer::SocketServer() {
     #ifdef WIN64
@@ -89,6 +92,8 @@ bool sys::SocketServer::socketInit() {
             return false;
         }
     }
+
+    return true;
 }
 
 bool sys::SocketServer::socketListenConnection() {
@@ -140,6 +145,12 @@ bool sys::SocketServer::Client::connectClient() {
         if (WIN(cli_socket == INVALID_SOCKET)
             LINUX(cli_socket < 0))
             return false;
+
+        int32_t result = ::connect(cli_socket, (const sockaddr *)&cli_header, sizeof(cli_header));
+
+        if (WIN(result == SOCKET_ERROR)
+            LINUX(result < 0))
+            return false;
     }
 
     if (this->_type == type::udp_socket) {
@@ -150,11 +161,24 @@ bool sys::SocketServer::Client::connectClient() {
             return false;
     }
 
-    int32_t result = ::connect(cli_socket, (const sockaddr *)&cli_header, sizeof(cli_header));
+    return true;
+}
 
-    if (WIN(result == SOCKET_ERROR)
-        LINUX(result < 0))
+bool sys::SocketServer::Client::disconnectClient() {
+    WIN(closesocket(cli_socket))
+    LINUX(close(cli_socket));
+
+    shutdown(cli_socket, SHUT_RDWR);
+
+    return true;
+}
+
+bool sys::SocketServer::Client::isConnected() {
+    if (WIN(::send(cli_socket, "f", 1, 0) == SOCKET_ERROR)
+        LINUX(::send(cli_socket, "f", 1, 0) < 0))
         return false;
+
+    return true;
 }
 
 bool sys::SocketServer::connectBy(const uint32_t host, const uint16_t port) {
@@ -169,12 +193,108 @@ bool sys::SocketServer::connectBy(const uint32_t host, const uint16_t port) {
         if (clList.getPort() == port)
             isPortTrue = true;
 
-        if (isHostTrue && isPortTrue)
+        if (isHostTrue && isPortTrue) {
+            if (clList.isConnected())
+                return true;
+
             returnResult = clList.connectClient();
+        }
 
         isHostTrue = false;
         isPortTrue = false;
     }
 
     return returnResult;
+}
+
+bool sys::SocketServer::disconnectBy(const uint32_t host, const uint16_t port) {
+    bool   isHostTrue = false;
+    bool   isPortTrue = false;
+    bool returnResult = false;
+
+    for (auto& clList : listClient) {
+        if (clList.getHost() == host)
+            isHostTrue = true;
+
+        if (clList.getPort() == port)
+            isPortTrue = true;
+
+        if (isHostTrue && isPortTrue) {
+            if (clList.isConnected())
+                returnResult = clList.disconnectClient();
+
+            else
+                return false;
+        }
+
+        isHostTrue = false;
+        isPortTrue = false;
+    }
+
+    return returnResult;
+}
+
+bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
+    int32_t result = 0;
+
+    char *msg = (char *)message;
+
+    if (this->isConnected()) {
+        result = ::send(cli_socket, msg, size, 0);
+
+        if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
+            return false;
+    }
+
+    if (!this->connectClient())
+        return false;
+
+    result = ::send(cli_socket, msg, size, 0);
+
+    if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
+        return false;
+
+    return true;
+}
+
+bool sys::SocketServer::Client::sendClientData(const std::vector<int8_t>& message) {
+    int32_t result = 0;
+
+    if (this->isConnected()) {
+        result = ::send(cli_socket, message.data(), message.size(), 0);
+
+        if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
+            return false;
+    }
+
+    if (!this->connectClient())
+        return false;
+
+    result = ::send(cli_socket, message.data(), message.size(), 0);
+
+    if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
+        return false;
+
+    return true;
+}
+
+bool sys::SocketServer::Client::sendClientData(const std::string& message) {
+    int32_t result = 0;
+
+    if (this->isConnected()) {
+        result = ::send(cli_socket, message.c_str(), message.size(), 0);
+
+        if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
+            return false;
+    }
+
+    if (!this->connectClient())
+        return false;
+
+    result = ::send(cli_socket, message.c_str(), message.size(), 0);
+
+    if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
+        return false;
+
+    return true;
 }
