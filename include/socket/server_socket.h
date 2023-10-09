@@ -1,7 +1,7 @@
 #ifndef SRV_SOCKET
 #define SRV_SOCKET
 
-#ifdef WIN64
+#ifdef _WIN32
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
 
@@ -12,6 +12,7 @@
 #  include <sys/types.h>
 #  include <arpa/inet.h>
 #  include <netinet/in.h>
+#  include <unistd.h>
 
 #  define WIN(exp)
 #  define LINUX(exp) exp
@@ -21,7 +22,7 @@
 #include <string>
 #include <thread>
 
-#include <unistd.h>
+#include <functional>
 
 namespace sys {
     enum class SocketStatus : uint8_t {
@@ -50,17 +51,18 @@ namespace sys {
 
     class SocketServer {
     private:
-        typedef SocketStatus status;
-        typedef SocketType     type;
-        typedef ThreadMode     mode;
-
         struct Client;
+
+        typedef SocketStatus                 status;
+        typedef SocketType                     type;
+        typedef ThreadMode                     mode;
+        typedef std::function<void()> recvHandler_t;
 
         status _status;
         type     _type;
         mode     _mode;
 
-        #ifdef WIN64
+        #ifdef _WIN32
             typedef SOCKET      Socket_t;
             typedef sockaddr_in SockIn_t;
             typedef int32_t    SockLen_t;
@@ -100,12 +102,12 @@ namespace sys {
         bool connectBy(const uint32_t, const uint16_t);
 
         bool sendBy(const uint32_t, const uint16_t, const void *, uint32_t);
-        bool sendBy(const uint32_t, const uint16_t, const std::vector<int8_t>&);
+        bool sendBy(const uint32_t, const uint16_t, const std::vector<char>&);
         bool sendBy(const uint32_t, const uint16_t, const std::string&);
 
-        bool sendAll(const void *, uint32_t);
-        bool sendAll(const std::vector<int8_t>&);
-        bool sendAll(const std::string&);
+        uint64_t sendAll(const void *, uint32_t);
+        uint64_t sendAll(const std::vector<char>&);
+        uint64_t sendAll(const std::string&);
 
         bool disconnectBy(const uint32_t, const uint16_t);
         bool disconnectAll();
@@ -118,16 +120,16 @@ namespace sys {
 
     struct SocketServer::Client {
     private:
-        Socket_t cli_socket;
-        SockIn_t cli_header;
+        Socket_t   cli_socket;
+        SockIn_t   cli_header;
 
-        type          _type;
+        type            _type;
 
-        std::vector<int8_t>
-                   cli_data;
+        std::vector<char>
+                     cli_data;
 
     public:
-        [[nodiscard]] std::vector<int8_t> getData() const { return this->cli_data;   }
+        [[nodiscard]] std::vector<char>   getData() const { return this->cli_data;   }
         [[nodiscard]] Socket_t          getSocket() const { return this->cli_socket; }
         [[nodiscard]] SockIn_t          getHeader() const { return this->cli_header; }
         [[nodiscard]] uint16_t            getPort() const { return htons(this->cli_header.sin_port); }
@@ -142,7 +144,7 @@ namespace sys {
         bool isConnected();
 
         bool sendClientData(void *, uint32_t);
-        bool sendClientData(const std::vector<int8_t>&);
+        bool sendClientData(const std::vector<char>&);
         bool sendClientData(const std::string&);
     };
 }

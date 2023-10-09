@@ -3,12 +3,9 @@
 //
 
 #include "../../include/socket/server_socket.h"
-#include <cstdint>
-#include <sys/socket.h>
-#include <vector>
 
 sys::SocketServer::SocketServer() {
-    #ifdef WIN64
+    #ifdef _WIN32
         WSADATA wsa;
 
         if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
@@ -19,7 +16,7 @@ sys::SocketServer::SocketServer() {
 sys::SocketServer::SocketServer(const uint16_t port) {
     this->port = port;
 
-    #ifdef WIN64
+    #ifdef _WIN32
         WSADATA wsa;
 
         if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
@@ -38,7 +35,7 @@ sys::SocketServer::SocketServer(const SocketServer& server) {
     this->srv_socket = server.srv_socket;
     this->port       = server.port;
 
-    #ifdef WIN64
+    #ifdef _WIN32
         WSADATA wsa;
 
         if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
@@ -151,6 +148,14 @@ bool sys::SocketServer::Client::connectClient() {
         if (WIN(result == SOCKET_ERROR)
             LINUX(result < 0))
             return false;
+
+        std::thread([this]() -> void {
+            int32_t bytes_read = 0;
+
+            do {
+                bytes_read = ::recv(cli_socket, cli_data.data(), 0xffff, 0);
+            } while (bytes_read > 0);
+        }).detach();
     }
 
     if (this->_type == type::udp_socket) {
@@ -159,6 +164,14 @@ bool sys::SocketServer::Client::connectClient() {
         if (WIN(cli_socket == INVALID_SOCKET)
             LINUX(cli_socket < 0))
             return false;
+
+        std::thread([this]() -> void {
+            int32_t bytes_read = 0;
+
+            do {
+                bytes_read = ::recvfrom(cli_socket, cli_data.data(), 0xffff, 0, nullptr, nullptr);
+            } while (bytes_read > 0);
+        }).detach();
     }
 
     return true;
@@ -168,7 +181,9 @@ bool sys::SocketServer::Client::disconnectClient() {
     WIN(closesocket(cli_socket))
     LINUX(close(cli_socket));
 
-    shutdown(cli_socket, SHUT_RDWR);
+    #ifndef _WIN32
+        shutdown(cli_socket, SHUT_RDWR);
+    #endif // WIN64
 
     return true;
 }
@@ -234,6 +249,46 @@ bool sys::SocketServer::disconnectBy(const uint32_t host, const uint16_t port) {
     return returnResult;
 }
 
+bool sys::SocketServer::sendBy(const uint32_t host, 
+                               const uint16_t port, 
+                               const void *message,
+                               uint32_t size) {
+    bool isHostTrue   = false;
+    bool isPortTrue   = false;
+    bool returnResult = false;
+
+    for (auto& clList : listClient) {
+        if (clList.getHost() == host)
+            isHostTrue = true;
+
+        if (clList.getPort() == port)
+            isPortTrue = true;
+
+        if (isHostTrue && isPortTrue)
+            returnResult = clList.sendClientData((void *)message, size);
+
+        isHostTrue = false;
+        isPortTrue = false;
+    }
+
+    return returnResult;
+}
+
+uint64_t sys::SocketServer::sendAll(const void *message, uint32_t size) {
+    bool returnResult = false;
+
+    uint64_t failCount = 0;
+
+    for (auto& clList : listClient) {
+        returnResult = clList.sendClientData((void *)message, size);
+
+        if (!returnResult)
+            ++failCount;
+    }
+
+    return failCount;
+}
+
 bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
     int32_t result = 0;
 
@@ -257,7 +312,7 @@ bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
     return true;
 }
 
-bool sys::SocketServer::Client::sendClientData(const std::vector<int8_t>& message) {
+bool sys::SocketServer::Client::sendClientData(const std::vector<char>& message) {
     int32_t result = 0;
 
     if (this->isConnected()) {
