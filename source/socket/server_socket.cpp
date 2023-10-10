@@ -3,6 +3,9 @@
 //
 
 #include "../../include/socket/server_socket.h"
+#include <cstdint>
+#include <thread>
+#include <vector>
 
 sys::SocketServer::SocketServer() {
     #ifdef _WIN32
@@ -196,6 +199,28 @@ bool sys::SocketServer::Client::isConnected() {
     return true;
 }
 
+std::string sys::SocketServer::readClientData(const uint32_t host, const uint16_t port) {
+    bool   isHostTrue = false;
+    bool   isPortTrue = false;
+    bool returnResult = false;
+
+    for (auto& clList : listClient) {
+        if (clList.getHost() == host)
+            isHostTrue = true;
+
+        if (clList.getPort() == port)
+            isPortTrue = true;
+
+        if (isHostTrue && isPortTrue)
+            return clList.getData().data();
+
+        isHostTrue = false;
+        isPortTrue = false;
+    }
+
+    return "";
+}
+
 bool sys::SocketServer::connectBy(const uint32_t host, const uint16_t port) {
     bool   isHostTrue = false;
     bool   isPortTrue = false;
@@ -249,6 +274,20 @@ bool sys::SocketServer::disconnectBy(const uint32_t host, const uint16_t port) {
     return returnResult;
 }
 
+bool sys::SocketServer::disconnectAll() {
+    bool returnResult = false;
+
+    for (auto& clList : listClient) {
+        if (clList.isConnected())
+            returnResult = clList.disconnectClient();
+
+        else
+            return false;
+    }
+
+    return returnResult;
+}
+
 bool sys::SocketServer::sendBy(const uint32_t host, 
                                const uint16_t port, 
                                const void *message,
@@ -274,6 +313,54 @@ bool sys::SocketServer::sendBy(const uint32_t host,
     return returnResult;
 }
 
+bool sys::SocketServer::sendBy(const uint32_t host,
+                               const uint16_t port,
+                               const std::vector<char>& message) {
+    bool isHostTrue   = false;
+    bool isPortTrue   = false;
+    bool returnResult = false;
+
+    for (auto& clList : listClient) {
+        if (clList.getHost() == host)
+            isHostTrue = true;
+
+        if (clList.getPort() == port)
+            isPortTrue = true;
+
+        if (isHostTrue && isPortTrue)
+            returnResult = clList.sendClientData(message);
+
+        isHostTrue = false;
+        isPortTrue = false;
+    }
+
+    return returnResult;
+}
+
+bool sys::SocketServer::sendBy(const uint32_t host, 
+                               const uint16_t port, 
+                               const std::string& message) {
+    bool isHostTrue   = false;
+    bool isPortTrue   = false;
+    bool returnResult = false;
+
+    for (auto& clList : listClient) {
+        if (clList.getHost() == host)
+            isHostTrue = true;
+
+        if (clList.getPort() == port)
+            isPortTrue = true;
+
+        if (isHostTrue && isPortTrue)
+            returnResult = clList.sendClientData(message);
+
+        isHostTrue = false;
+        isPortTrue = false;
+    }
+
+    return returnResult;
+}
+
 uint64_t sys::SocketServer::sendAll(const void *message, uint32_t size) {
     bool returnResult = false;
 
@@ -281,6 +368,36 @@ uint64_t sys::SocketServer::sendAll(const void *message, uint32_t size) {
 
     for (auto& clList : listClient) {
         returnResult = clList.sendClientData((void *)message, size);
+
+        if (!returnResult)
+            ++failCount;
+    }
+
+    return failCount;
+}
+
+uint64_t sys::SocketServer::sendAll(const std::vector<char>& message) {
+    bool returnResult = false;
+
+    uint64_t failCount = 0;
+
+    for (auto& clList : listClient) {
+        returnResult = clList.sendClientData(message);
+
+        if (!returnResult)
+            ++failCount;
+    }
+
+    return failCount;
+}
+
+uint64_t sys::SocketServer::sendAll(const std::string& message) {
+    bool returnResult = false;
+
+    uint64_t failCount = 0;
+
+    for (auto& clList : listClient) {
+        returnResult = clList.sendClientData(message);
 
         if (!returnResult)
             ++failCount;
@@ -352,4 +469,8 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
         return false;
 
     return true;
+}
+
+sys::SocketServer::~SocketServer() {
+    this->disconnectAll();
 }

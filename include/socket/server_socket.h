@@ -1,6 +1,7 @@
 #ifndef SRV_SOCKET
 #define SRV_SOCKET
 
+#include <cstdint>
 #ifdef _WIN32
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
@@ -104,6 +105,8 @@ namespace sys {
         bool sendBy(const uint32_t, const uint16_t, const void *, uint32_t);
         bool sendBy(const uint32_t, const uint16_t, const std::vector<char>&);
         bool sendBy(const uint32_t, const uint16_t, const std::string&);
+
+        std::string readClientData(const uint32_t, const uint16_t);
 
         uint64_t sendAll(const void *, uint32_t);
         uint64_t sendAll(const std::vector<char>&);
