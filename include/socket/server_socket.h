@@ -51,7 +51,7 @@ namespace sys {
     } __attribute__((packed));
 
     class SocketServer {
-    private:
+    protected:
         struct Client;
 
         typedef SocketStatus                 status;
