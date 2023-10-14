@@ -21,7 +21,7 @@ void sha256::transform(const unsigned char *message, uint32_t block_nb) {
             w[j] = SHA256_F4(w[j - 2]) + w[j - 7] + SHA256_F3(w[j - 15]) + w[j - 16];
 
         for (int j = 0; j < 8; j++)
-            wv[j] = sha::m_h[j];
+            wv[j] = m_h[j];
 
         for (int j = 0; j < 64; j++) {
             t1 = wv[7] + SHA256_F2(wv[4]) + SHA2_CH(wv[4], wv[5], wv[6])
@@ -40,7 +40,7 @@ void sha256::transform(const unsigned char *message, uint32_t block_nb) {
         }
 
         for (int j = 0; j < 8; j++)
-            sha::m_h[j] += wv[j];
+            m_h[j] += wv[j];
     }
 }
 
@@ -100,5 +100,25 @@ void sha256::final(unsigned char *digest) {
     transform(m_block, block_nb);
 
     for (int i = 0; i < 8; i++)
-        SHA2_UNPACK32(sha::m_h[i], &digest[i << 2]);
+        SHA2_UNPACK32(m_h[i], &digest[i << 2]);
+}
+
+std::string sha256::hash(const std::string& value, const sha256_options& options) {
+    uint8_t digest[DIGEST_SIZE];
+
+    memset(digest, 0, DIGEST_SIZE);
+
+    sha256 ctx = sha256();
+
+    ctx.update((uint8_t *)value.c_str(), value.length());
+    ctx.final(digest);
+
+    char buf[2 * DIGEST_SIZE + 1];
+
+    buf[2 * DIGEST_SIZE] = 0;
+
+    for (int i = 0; i < DIGEST_SIZE; i++)
+        sprintf(buf + i * 2, "%02x", digest[i]);
+
+    return std::string(buf);
 }

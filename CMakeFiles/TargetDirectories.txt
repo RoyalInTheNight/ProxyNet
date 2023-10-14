@@ -1,0 +1,5 @@
+C:/Users/MikoG/ProxyNet/CMakeFiles/socket.dir
+C:/Users/MikoG/ProxyNet/CMakeFiles/shell.dir
+C:/Users/MikoG/ProxyNet/CMakeFiles/ProxyNet.dir
+C:/Users/MikoG/ProxyNet/CMakeFiles/ALL_BUILD.dir
+C:/Users/MikoG/ProxyNet/CMakeFiles/ZERO_CHECK.dir

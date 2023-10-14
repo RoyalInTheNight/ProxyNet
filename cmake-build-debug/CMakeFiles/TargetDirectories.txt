@@ -1,3 +1,0 @@
-C:/Users/MikoG/CLionProjects/ProxyNet/cmake-build-debug/CMakeFiles/ProxyNet.dir
-C:/Users/MikoG/CLionProjects/ProxyNet/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/MikoG/CLionProjects/ProxyNet/cmake-build-debug/CMakeFiles/rebuild_cache.dir

@@ -471,6 +471,19 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
     return true;
 }
 
+uint64_t sys::SocketServer::sizeListBot() {
+    return this->listClient.size();
+}
+
+uint64_t sys::SocketServer::checkBot() {
+    uint64_t size = 0;
+
+    for (auto& clList : listClient)
+        if (clList.connectClient()) ++size;
+
+    return size;
+}
+
 sys::SocketServer::~SocketServer() {
     this->disconnectAll();
 }
