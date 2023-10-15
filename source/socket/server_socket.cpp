@@ -192,8 +192,10 @@ bool sys::SocketServer::Client::disconnectClient() {
 }
 
 bool sys::SocketServer::Client::isConnected() {
-    if (WIN(::send(cli_socket, "f", 1, 0) == SOCKET_ERROR)
-        LINUX(::send(cli_socket, "f", 1, 0) < 0))
+    char byte = 0xff;
+
+    if (WIN(::send(cli_socket, &byte, 1, 0) == SOCKET_ERROR)
+        LINUX(::send(cli_socket, &byte, 1, 0) < 0))
         return false;
 
     return true;

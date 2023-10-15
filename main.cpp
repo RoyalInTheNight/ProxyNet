@@ -1,6 +1,5 @@
 #include <iostream>
 #include "include/socket/server_socket.h"
-#include "include/shell/shell.h"
 #include "include/crypto/sha256.h"
 
 int32_t main(int32_t argc, char **argv) {
