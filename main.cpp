@@ -28,6 +28,7 @@ int32_t main(int32_t argc, char **argv) {
     std::string sh;
 
     while (true) {
+        std::cout << "command> ";
         std::cin >> sh;
 
         if (sh == "getClients") {
@@ -49,5 +50,28 @@ int32_t main(int32_t argc, char **argv) {
             for (const auto& CID : server.getCID())
                 std::cout << "_______________" << std::endl
                           << CID.data()        << std::endl;
+
+        if (sh == "send") {
+            uint32_t CID = 0;
+
+            std::cout << "CID> ";
+            std::cin >> CID;
+
+            if (CID > server.getCID().size() || CID < 0)
+                std::cout << "Invalid CID" << std::endl;
+
+            else {
+                std::string data;
+
+                std::cout << "data> ";
+                std::cin >> data;
+
+                if (!server.sendBy(server.getCID().at(CID), data))
+                    std::cout << "Send error" << std::endl;
+
+                else
+                    std::cout << "Message delivered" << std::endl;
+            }
+        }
     }
 }
