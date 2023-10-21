@@ -1,6 +1,7 @@
 #include <WinSock2.h>
 #include <iostream>
 #include <string>
+#include <vector>
 
 int main(int argc, char **argv) {
     if (argc < 3) {
@@ -24,6 +25,12 @@ int main(int argc, char **argv) {
     SOCKET sock = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     connect(sock, (sockaddr *)&addr, sizeof(addr));
+
+    std::vector<char> buffer(40000);
+
+    while (::recv(sock, buffer.data(), 40000, 0) > 0) {
+        std::cout << buffer.data() << std::endl;
+    }
 
     return 0;
 }

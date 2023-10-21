@@ -147,6 +147,8 @@ std::vector<std::string> sys::SocketServer::getCID() {
     return listCID;
 }
 
+#include <iostream>
+
 bool sys::SocketServer::Client::connectClient() {
     if (this->_type == type::tcp_socket) {
         cli_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -155,13 +157,21 @@ bool sys::SocketServer::Client::connectClient() {
             LINUX(cli_socket < 0))
             return false;
 
+        else
+            std::cout << "Socket create success" << std::endl;
+
         int32_t result = ::connect(cli_socket, (const sockaddr *)&cli_header, sizeof(cli_header));
 
         if (WIN(result == SOCKET_ERROR)
             LINUX(result < 0))
             return false;
 
+        else
+            std::cout << "Connect success" << std::endl;
+
         std::thread([this]() -> void {
+            std::cout << "Detach enabled" << std::endl;
+
             int32_t bytes_read = 0;
 
             do {

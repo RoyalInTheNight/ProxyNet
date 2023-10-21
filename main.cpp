@@ -66,7 +66,7 @@ int32_t main(int32_t argc, char **argv) {
                 std::cout << "data> ";
                 std::cin >> data;
 
-                if (!server.sendBy(server.getCID().at(CID), data))
+                if (!server.sendBy(server.getCID().at(CID - 1), data))
                     std::cout << "Send error" << std::endl;
 
                 else
