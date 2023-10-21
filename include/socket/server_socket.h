@@ -25,6 +25,8 @@
 
 #include <functional>
 
+#include "../../include/crypto/sha256.h"
+
 namespace sys {
     enum class SocketStatus : uint8_t {
         up = 0,
@@ -78,7 +80,7 @@ namespace sys {
 
         uint16_t port;
 
-        std::vector<Client> listClient;
+        std::vector<Client>   listClient;
 
     public:
         SocketServer();
@@ -93,6 +95,7 @@ namespace sys {
         [[nodiscard]] SocketType                     getSocketType() const { return this->_type;      }
         [[nodiscard]] SocketStatus                 getSocketStatus() const { return this->_status;    }
         [[nodiscard]] std::vector<ClientConnectionData> getClients() const;
+        [[nodiscard]] std::vector<std::string>              getCID();
 
         void setPort(const uint16_t server_port)          { this-> port = server_port; }
         void setType(const SocketType& socket_type)       { this->_type = socket_type; }
@@ -100,19 +103,19 @@ namespace sys {
 
         bool socketInit();
         bool socketListenConnection();
-        bool connectBy(const uint32_t, const uint16_t);
+        bool connectBy(const std::string&);
 
-        bool sendBy(const uint32_t, const uint16_t, const void *, uint32_t);
-        bool sendBy(const uint32_t, const uint16_t, const std::vector<char>&);
-        bool sendBy(const uint32_t, const uint16_t, const std::string&);
+        bool sendBy(const std::string&, const void *, uint32_t);
+        bool sendBy(const std::string&, const std::vector<char>&);
+        bool sendBy(const std::string&, const std::string&);
 
-        std::string readClientData(const uint32_t, const uint16_t);
+        std::string readClientData(const std::string&);
 
         uint64_t sendAll(const void *, uint32_t);
         uint64_t sendAll(const std::vector<char>&);
         uint64_t sendAll(const std::string&);
 
-        bool disconnectBy(const uint32_t, const uint16_t);
+        bool disconnectBy(const std::string&);
         bool disconnectAll();
 
         uint64_t checkBot();
@@ -130,16 +133,27 @@ namespace sys {
 
         std::vector<char>
                      cli_data;
-
+        sha256        sha_imp;
+        
     public:
         [[nodiscard]] std::vector<char>   getData() const { return this->cli_data;   }
         [[nodiscard]] Socket_t          getSocket() const { return this->cli_socket; }
         [[nodiscard]] SockIn_t          getHeader() const { return this->cli_header; }
         [[nodiscard]] uint16_t            getPort() const { return htons(this->cli_header.sin_port); }
         [[nodiscard]] uint32_t            getHost() const { return this->cli_header WIN(.sin_addr.S_un.S_addr)LINUX(.sin_addr.s_addr); }
+        [[nodiscard]] std::vector<char>    getCID() const {
+            std::string hash = sha_imp.hash(inet_ntoa(cli_header.sin_addr), sha256::sha256_options::option_string_hash);
+            std::vector<char> CID;
+
+            for (const auto& symbol : hash)
+                CID.push_back(symbol);
+
+            return CID;
+        }
 
         void setSocket(const Socket_t client) { this->cli_socket = client; }
         void setHeader(const SockIn_t client) { this->cli_header = client; }
+        // void setClientID(const std::vector<char>& CID) { this->cid = CID;  }
 
         bool connectClient();
         bool disconnectClient();

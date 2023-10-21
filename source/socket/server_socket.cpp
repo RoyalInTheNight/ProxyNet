@@ -130,12 +130,21 @@ std::vector<sys::ClientConnectionData> sys::SocketServer::getClients() const {
 
     for (auto& clCon : listClient) {
         client.host = clCon.getHost();
-        client.port = clCon.getPort();
+        client.port = htons(clCon.getPort());
 
         clConList.push_back(client);
     }
 
     return clConList;
+}
+
+std::vector<std::string> sys::SocketServer::getCID() {
+    std::vector<std::string> listCID;
+
+    for (const auto& CID : listClient)
+        listCID.push_back(CID.getCID().data());
+    
+    return listCID;
 }
 
 bool sys::SocketServer::Client::connectClient() {
@@ -201,79 +210,35 @@ bool sys::SocketServer::Client::isConnected() {
     return true;
 }
 
-std::string sys::SocketServer::readClientData(const uint32_t host, const uint16_t port) {
-    bool   isHostTrue = false;
-    bool   isPortTrue = false;
-    bool returnResult = false;
-
+std::string sys::SocketServer::readClientData(const std::string& CID) {
     for (auto& clList : listClient) {
-        if (clList.getHost() == host)
-            isHostTrue = true;
-
-        if (clList.getPort() == port)
-            isPortTrue = true;
-
-        if (isHostTrue && isPortTrue)
+        if (clList.getCID().data() == CID)
             return clList.getData().data();
-
-        isHostTrue = false;
-        isPortTrue = false;
     }
 
     return "";
 }
 
-bool sys::SocketServer::connectBy(const uint32_t host, const uint16_t port) {
-    bool   isHostTrue = false;
-    bool   isPortTrue = false;
-    bool returnResult = false;
-
+bool sys::SocketServer::connectBy(const std::string& CID) {
     for (auto& clList : listClient) {
-        if (clList.getHost() == host)
-            isHostTrue = true;
-
-        if (clList.getPort() == port)
-            isPortTrue = true;
-
-        if (isHostTrue && isPortTrue) {
-            if (clList.isConnected())
-                return true;
-
-            returnResult = clList.connectClient();
-        }
-
-        isHostTrue = false;
-        isPortTrue = false;
+        if (clList.getCID().data() == CID)
+            return clList.connectClient();
     }
 
-    return returnResult;
+    return false;
 }
 
-bool sys::SocketServer::disconnectBy(const uint32_t host, const uint16_t port) {
-    bool   isHostTrue = false;
-    bool   isPortTrue = false;
-    bool returnResult = false;
-
-    for (auto& clList : listClient) {
-        if (clList.getHost() == host)
-            isHostTrue = true;
-
-        if (clList.getPort() == port)
-            isPortTrue = true;
-
-        if (isHostTrue && isPortTrue) {
+bool sys::SocketServer::disconnectBy(const std::string& CID) {
+    for (auto& clList : listClient)
+        if (clList.getCID().data() == CID) {
             if (clList.isConnected())
-                returnResult = clList.disconnectClient();
+                return clList.disconnectClient();
 
             else
-                return false;
+                return true;
         }
 
-        isHostTrue = false;
-        isPortTrue = false;
-    }
-
-    return returnResult;
+    return false;
 }
 
 bool sys::SocketServer::disconnectAll() {
@@ -290,77 +255,35 @@ bool sys::SocketServer::disconnectAll() {
     return returnResult;
 }
 
-bool sys::SocketServer::sendBy(const uint32_t host, 
-                               const uint16_t port, 
+bool sys::SocketServer::sendBy(const std::string& CID, 
                                const void *message,
                                uint32_t size) {
-    bool isHostTrue   = false;
-    bool isPortTrue   = false;
-    bool returnResult = false;
-
     for (auto& clList : listClient) {
-        if (clList.getHost() == host)
-            isHostTrue = true;
-
-        if (clList.getPort() == port)
-            isPortTrue = true;
-
-        if (isHostTrue && isPortTrue)
-            returnResult = clList.sendClientData((void *)message, size);
-
-        isHostTrue = false;
-        isPortTrue = false;
+        if (clList.getCID().data() == CID)
+            return clList.sendClientData((void *)message, size);
     }
 
-    return returnResult;
+    return false;
 }
 
-bool sys::SocketServer::sendBy(const uint32_t host,
-                               const uint16_t port,
+bool sys::SocketServer::sendBy(const std::string& CID,
                                const std::vector<char>& message) {
-    bool isHostTrue   = false;
-    bool isPortTrue   = false;
-    bool returnResult = false;
-
     for (auto& clList : listClient) {
-        if (clList.getHost() == host)
-            isHostTrue = true;
-
-        if (clList.getPort() == port)
-            isPortTrue = true;
-
-        if (isHostTrue && isPortTrue)
-            returnResult = clList.sendClientData(message);
-
-        isHostTrue = false;
-        isPortTrue = false;
+        if (clList.getCID().data())
+            return clList.sendClientData(message);
     }
 
-    return returnResult;
+    return false;
 }
 
-bool sys::SocketServer::sendBy(const uint32_t host, 
-                               const uint16_t port, 
+bool sys::SocketServer::sendBy(const std::string& CID, 
                                const std::string& message) {
-    bool isHostTrue   = false;
-    bool isPortTrue   = false;
-    bool returnResult = false;
-
     for (auto& clList : listClient) {
-        if (clList.getHost() == host)
-            isHostTrue = true;
-
-        if (clList.getPort() == port)
-            isPortTrue = true;
-
-        if (isHostTrue && isPortTrue)
-            returnResult = clList.sendClientData(message);
-
-        isHostTrue = false;
-        isPortTrue = false;
+        if (clList.getCID().data() == CID)
+            return clList.sendClientData(message);
     }
 
-    return returnResult;
+    return false;
 }
 
 uint64_t sys::SocketServer::sendAll(const void *message, uint32_t size) {
@@ -487,5 +410,6 @@ uint64_t sys::SocketServer::checkBot() {
 }
 
 sys::SocketServer::~SocketServer() {
+    this->listClient.clear();
     this->disconnectAll();
 }
