@@ -46,6 +46,40 @@ int32_t main(int32_t argc, char **argv) {
             }
         }
 
+        if (sh == "proxyEnable") {
+            uint32_t _CID = 0;
+
+            int count = 0;
+
+            for (const auto& CID : server.getCID()) {
+                std::cout << count << ". " << CID.data() << std::endl;
+
+                ++count;
+            }
+
+            std::cout << "CID> ";
+            std::cin >> _CID;
+
+            if (_CID >= server.getCID().size() || _CID < 0)
+                std::cout << "Invalid CID" << std::endl;
+
+            else {
+                std::string connection_string;
+
+                sockaddr_in keep_host;
+
+                keep_host.sin_addr.WIN(S_un.S_addr)LINUX(s_addr) = server.getClients().at(_CID).host;
+
+                connection_string.push_back(PROXY_MESSAGE);
+                connection_string += inet_ntoa(keep_host.sin_addr);
+                connection_string.push_back(':');
+                connection_string += std::to_string(server.getClients().at(_CID).port);
+
+                if (!server.sendBy(server.getCID().at(_CID), connection_string))
+                    std::cout << "Proxy don't enabled: send connection string failed" << std::endl;
+            }
+        }
+
         if (sh == "getCID")
             for (const auto& CID : server.getCID())
                 std::cout << "_______________" << std::endl

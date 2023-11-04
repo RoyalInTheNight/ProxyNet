@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <thread>
 #include <vector>
+#include <fstream>
 
 sys::SocketServer::SocketServer() {
     #ifdef _WIN32
@@ -110,10 +111,97 @@ bool sys::SocketServer::socketListenConnection() {
             LINUX(cli_socket < 0))
             return false;
 
-        client.setSocket(cli_socket);
-        client.setHeader(cli_header);
+        std::vector<char> buffer(100);
 
-        client.setCID();
+        if (recv(cli_socket, buffer.data(), 1, 0)) {
+            if ((int)buffer.at(0) == ESTABILISH_BYTE) {
+                client.setSocket(cli_socket);
+                client.setHeader(cli_header);
+
+                client.setCID();
+            }
+
+            else if ((int)buffer.at(0) == PROXY_MESSAGE) {
+                std::string address_proxy;
+                std::string port_proxy;
+
+                char separator = ':';
+                bool s = false;
+                bool proxy_failed = false;
+
+                for (int i = 1; i < buffer.size(); i++) {
+                    if (!s)
+                        address_proxy.push_back(buffer.at(i));
+
+                    else if (s)
+                        port_proxy.push_back(buffer.at(i));
+
+                    else if (buffer.at(i) == separator)
+                        s = true;
+                }
+
+                SockIn_t proxy;
+
+                proxy.sin_addr.WIN(S_un.S_addr)LINUX(s_addr) = inet_addr(address_proxy.c_str());
+                proxy.sin_port                               = htons((uint16_t)std::stoi(port_proxy));
+                proxy.sin_family                             = AF_INET;
+
+                Socket_t proxy_bus = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+                if (WIN(proxy_bus == INVALID_SOCKET)LINUX(proxy_bus < 0))
+                    proxy_failed = true;
+
+                if (::connect(proxy_bus, (sockaddr *)&proxy, sizeof(proxy)) WIN(== SOCKET_ERROR)LINUX(< 0))
+                    proxy_failed = true;
+
+                if (!proxy_failed) {
+                    std::vector<char> proxy_buffer(__INT16_MAX__);
+
+                    std::thread([&]() -> void {
+                        std::vector<char> proxy_cli_buffer(__INT16_MAX__);
+
+                        while (recv(proxy_bus, proxy_cli_buffer.data(), __INT16_MAX__, 0)) {
+                            if (!proxy_cli_buffer.empty())
+                                if (!::send(cli_socket, proxy_cli_buffer.data(), proxy_cli_buffer.size(), 0)) {
+                                    proxy_failed = true;
+                                    break;
+                                }
+                        }
+
+                        proxy_failed = true;
+                    }).detach();
+
+                    while (recv(cli_socket, proxy_buffer.data(), __INT16_MAX__, 0)) {
+                        if (!proxy_buffer.empty())
+                            if (!::send(proxy_bus, proxy_buffer.data(), proxy_buffer.size(), 0)) {
+                                proxy_failed = true;
+                                break;
+                            }
+                    }
+
+                    proxy_failed = true;
+                }
+
+                else {
+                    char proxy_mode = PROXY_MODE_FAILED;
+
+                    send(cli_socket, &proxy_mode, 1, 0);
+                }
+            }
+
+            else if ((int)buffer.at(0) == PROXY_MODE_FAILED) {
+                std::ofstream log("proxy_mode_log.log");
+
+                if (log.is_open()) {
+                    log << "[FAILED]Proxy mode don't enabled";
+
+                    log.close();
+                }
+
+                else
+                    log.close();
+            }
+        }
 
         listClient.push_back(client);
     }

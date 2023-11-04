@@ -1,13 +1,11 @@
 #ifdef _WIN32
 #include <WinSock2.h>
-
 #define NIX(exp)
 #define WIN(exp) exp
 #else
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-
 #define NIX(exp) exp
 #define WIN(exp)
 #endif
@@ -23,7 +21,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-#ifndef _WIN32
+#ifdef _WIN32
     WSADATA wsa;
 
     WSAStartup(MAKEWORD(2, 2), &wsa);
@@ -33,7 +31,7 @@ int main(int argc, char **argv) {
 
     sockaddr_in addr;
 
-    addr.sin_addr.WIN(S_un.S_addr)NIX(.s_addr) = inet_addr(argv[1]);
+    addr.sin_addr.WIN(S_un.S_addr)NIX(s_addr) = inet_addr(argv[1]);
     addr.sin_port             = htons(port);
     addr.sin_family           = AF_INET;
 

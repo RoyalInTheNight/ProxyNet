@@ -27,6 +27,11 @@
 
 #include "../../include/crypto/sha256.h"
 
+#define PROXY_MESSAGE   0xff
+#define ESTABILISH_BYTE 0xfe
+
+#define PROXY_MODE_FAILED 0xef
+
 namespace sys {
     enum class SocketStatus : uint8_t {
         up = 0,
