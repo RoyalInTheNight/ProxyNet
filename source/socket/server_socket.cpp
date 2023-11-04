@@ -118,7 +118,7 @@ bool sys::SocketServer::socketListenConnection() {
         if (recv(cli_socket, buffer.data(), 1, 0)) {
             std::cout << "buffer.at(0) == " << (int)buffer.at(0) << std::endl;
 
-            if ((int)buffer.at(0) == ESTABILISH_BYTE) {
+            if ((int)buffer.at(0) == -2) {
                 std::cout << "Estabilish byte" << std::endl;
 
                 client.setSocket(cli_socket);
@@ -127,7 +127,7 @@ bool sys::SocketServer::socketListenConnection() {
                 client.setCID();
             }
 
-            else if ((int)buffer.at(0) == PROXY_MESSAGE) {
+            else if ((int)buffer.at(0) == -1) {
                 std::string address_proxy;
                 std::string port_proxy;
 
