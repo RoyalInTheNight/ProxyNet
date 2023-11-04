@@ -8,6 +8,8 @@
 #include <vector>
 #include <fstream>
 
+#include <iostream>
+
 sys::SocketServer::SocketServer() {
     #ifdef _WIN32
         WSADATA wsa;
@@ -111,10 +113,12 @@ bool sys::SocketServer::socketListenConnection() {
             LINUX(cli_socket < 0))
             return false;
 
-        std::vector<char> buffer(100);
+        std::vector<char> buffer(__INT16_MAX__);
 
         if (recv(cli_socket, buffer.data(), 1, 0)) {
             if ((int)buffer.at(0) == ESTABILISH_BYTE) {
+                std::cout << "Estabilish byte" << std::endl;
+
                 client.setSocket(cli_socket);
                 client.setHeader(cli_header);
 

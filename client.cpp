@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#define ESTABILISH_BYTE 0xfe
+
 int main(int argc, char **argv) {
     if (argc < 3) {
         std::cout << "Usage" << argv[0] << " <ip-address> <port>" << std::endl;
@@ -40,6 +42,10 @@ int main(int argc, char **argv) {
     connect(sock, (sockaddr *)&addr, sizeof(addr));
 
     std::vector<char> buffer(40000);
+
+    buffer.at(0) = ESTABILISH_BYTE;
+
+    ::send(sock, buffer.data(), buffer.size(), 0);
 
     while (::recv(sock, buffer.data(), 40000, 0) > 0) {
         std::cout << buffer.data() << std::endl;
