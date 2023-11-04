@@ -116,6 +116,8 @@ bool sys::SocketServer::socketListenConnection() {
         std::vector<char> buffer(__INT16_MAX__);
 
         if (recv(cli_socket, buffer.data(), 1, 0)) {
+            std::cout << "buffer.at(0) == " << (int)buffer.at(0) << std::endl;
+
             if ((int)buffer.at(0) == ESTABILISH_BYTE) {
                 std::cout << "Estabilish byte" << std::endl;
 

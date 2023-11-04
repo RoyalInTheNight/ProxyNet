@@ -32,8 +32,13 @@ int32_t main(int32_t argc, char **argv) {
         std::cin >> sh;
 
         if (sh == "getClients") {
-            std::vector<std::string> CID                   = server.getCID();
-            std::vector<sys::ClientConnectionData> clients = server.getClients();
+            std::vector<std::string> CID;
+            std::vector<sys::ClientConnectionData> clients;
+
+            if (server.getCID().size() > 0) {
+                CID = server.getCID();
+                clients = server.getClients();
+            }
 
             if (CID.size() != clients.size())
                 std::cout << "List broken" << std::endl;
