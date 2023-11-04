@@ -88,11 +88,9 @@ int32_t main(int32_t argc, char **argv) {
             std::cout << "data> ";
             std::cin >> data;
 
-            if (!server.sendAll(data))
-                std::cout << "Send error" << std::endl;
+            uint64_t failed = server.sendAll(data);
 
-            else
-                std::cout << "Message delivered" << std::endl;
+            std::cout << "Message delivered" << "\n\tFails: " << failed << std::endl;
         }
     }
 }
