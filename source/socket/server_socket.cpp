@@ -13,7 +13,7 @@ sys::SocketServer::SocketServer() {
 
         if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
             this->_status = status::err_init_socket;
-    #endif // WIN64
+    #endif
 }
 
 sys::SocketServer::SocketServer(const uint16_t port) {
@@ -24,16 +24,16 @@ sys::SocketServer::SocketServer(const uint16_t port) {
 
         if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
             this->_status = status::err_init_socket;
-    #endif // WIN64
+    #endif
 }
 
 sys::SocketServer::SocketServer(const SocketServer& server) {
-    this->_status = std::move(server._status);
-    this->_mode   = std::move(server._mode);
-    this->_type   = std::move(server._type);
+    this->_status = server._status;
+    this->_mode   = server._mode;
+    this->_type   = server._type;
 
-    this->srv_header = std::move(server.srv_header);
-    this->listClient = std::move(server.listClient);
+    this->srv_header = server.srv_header;
+    this->listClient = server.listClient;
 
     this->srv_socket = server.srv_socket;
     this->port       = server.port;
@@ -43,7 +43,7 @@ sys::SocketServer::SocketServer(const SocketServer& server) {
 
         if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
             this->_status = status::err_init_socket;
-    #endif // WIN64
+    #endif
 }
 
 bool sys::SocketServer::socketInit() {
@@ -113,6 +113,8 @@ bool sys::SocketServer::socketListenConnection() {
         client.setSocket(cli_socket);
         client.setHeader(cli_header);
 
+        client.setCID();
+
         listClient.push_back(client);
     }
 
@@ -147,8 +149,6 @@ std::vector<std::string> sys::SocketServer::getCID() {
     return listCID;
 }
 
-#include <iostream>
-
 bool sys::SocketServer::Client::connectClient() {
     if (this->_type == type::tcp_socket) {
         cli_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -157,21 +157,13 @@ bool sys::SocketServer::Client::connectClient() {
             LINUX(cli_socket < 0))
             return false;
 
-        else
-            std::cout << "Socket create success" << std::endl;
-
         int32_t result = ::connect(cli_socket, (const sockaddr *)&cli_header, sizeof(cli_header));
 
         if (WIN(result == SOCKET_ERROR)
             LINUX(result < 0))
             return false;
 
-        else
-            std::cout << "Connect success" << std::endl;
-
         std::thread([this]() -> void {
-            std::cout << "Detach enabled" << std::endl;
-
             int32_t bytes_read = 0;
 
             do {
@@ -393,6 +385,8 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
 
         if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
             return false;
+
+        return true;
     }
 
     if (!this->connectClient())

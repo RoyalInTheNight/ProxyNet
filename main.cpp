@@ -21,7 +21,7 @@ int32_t main(int32_t argc, char **argv) {
     std::thread([&]() -> void {
         while (server.socketListenConnection());
 
-        std::cout << "Server shutdown, accept errror" << std::endl;
+        std::cout << "Server shutdown, accept error" << std::endl;
         exit(0);
     }).detach();
 
@@ -54,10 +54,18 @@ int32_t main(int32_t argc, char **argv) {
         if (sh == "send") {
             uint32_t CID = 0;
 
+            int count = 0;
+
+            for (const auto& CID_id : server.getCID()) {
+                std::cout << count << ". " << CID_id.data() << std::endl;
+
+                ++count;
+            }
+
             std::cout << "CID> ";
             std::cin >> CID;
 
-            if (CID > server.getCID().size() || CID < 0)
+            if (CID >= server.getCID().size() || CID < 0)
                 std::cout << "Invalid CID" << std::endl;
 
             else {
@@ -66,12 +74,25 @@ int32_t main(int32_t argc, char **argv) {
                 std::cout << "data> ";
                 std::cin >> data;
 
-                if (!server.sendBy(server.getCID().at(CID - 1), data))
+                if (!server.sendBy(server.getCID().at(CID), data))
                     std::cout << "Send error" << std::endl;
 
                 else
                     std::cout << "Message delivered" << std::endl;
             }
+        }
+
+        if (sh == "sendAll") {
+            std::string data;
+
+            std::cout << "data> ";
+            std::cin >> data;
+
+            if (!server.sendAll(data))
+                std::cout << "Send error" << std::endl;
+
+            else
+                std::cout << "Message delivered" << std::endl;
         }
     }
 }

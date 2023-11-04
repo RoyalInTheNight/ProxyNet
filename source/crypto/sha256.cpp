@@ -120,5 +120,5 @@ std::string sha256::hash(const std::string& value, const sha256_options& options
     for (int i = 0; i < DIGEST_SIZE; i++)
         sprintf(buf + i * 2, "%02x", digest[i]);
 
-    return std::string(buf);
+    return buf;
 }

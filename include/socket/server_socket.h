@@ -134,6 +134,7 @@ namespace sys {
         std::vector<char>
                      cli_data;
         sha256        sha_imp;
+        std::vector<char> CID;
         
     public:
         [[nodiscard]] std::vector<char>   getData() const { return this->cli_data;   }
@@ -141,18 +142,16 @@ namespace sys {
         [[nodiscard]] SockIn_t          getHeader() const { return this->cli_header; }
         [[nodiscard]] uint16_t            getPort() const { return htons(this->cli_header.sin_port); }
         [[nodiscard]] uint32_t            getHost() const { return this->cli_header WIN(.sin_addr.S_un.S_addr)LINUX(.sin_addr.s_addr); }
-        [[nodiscard]] std::vector<char>    getCID() const {
-            std::string hash = sha_imp.hash(inet_ntoa(cli_header.sin_addr), sha256::sha256_options::option_string_hash);
-            std::vector<char> CID;
-
-            for (const auto& symbol : hash)
-                CID.push_back(symbol);
-
-            return CID;
-        }
+        [[nodiscard]] std::vector<char>    getCID() const { return this->CID; }
 
         void setSocket(const Socket_t client) { this->cli_socket = client; }
         void setHeader(const SockIn_t client) { this->cli_header = client; }
+        void setCID() {
+            std::string hash = sha_imp.hash(inet_ntoa(cli_header.sin_addr), sha256::sha256_options::option_string_hash);
+
+            for (const auto& symbol : hash)
+                CID.push_back(symbol);
+        }
         // void setClientID(const std::vector<char>& CID) { this->cid = CID;  }
 
         bool connectClient();
