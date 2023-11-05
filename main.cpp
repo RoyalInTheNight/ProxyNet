@@ -44,10 +44,18 @@ int32_t main(int32_t argc, char **argv) {
                 std::cout << "List broken" << std::endl;
 
             else {
-                for (int32_t i = 0; i < CID.size(); i++)
-                    std::cout << "_______________"                       << std::endl
-                              << "ClientId: "      << CID.at(i).data()   << std::endl
-                              << "ClientAddress: " << clients.at(i).host << std::endl;
+                for (int32_t i = 0; i < CID.size(); i++) {
+                    if (clients.at(i).proxy_hint) {
+                        std::cout << "_______________" << std::endl
+                                  << "ClientId: " << CID.at(i).data() << " - proxy_hint_detected" << std::endl
+                                  << "ClientAddress: " << clients.at(i).host                         << std::endl;
+                    }
+
+                    else
+                        std::cout << "_______________"                          << std::endl
+                                  << "ClientId: " << CID.at(i).data()        << std::endl
+                                  << "ClientAddress: " << clients.at(i).host << std::endl;
+                }
             }
         }
 

@@ -53,8 +53,10 @@ namespace sys {
     };
 
     struct ClientConnectionData {
-        uint32_t host;
-        uint16_t port;
+        uint32_t   host;
+        uint16_t   port;
+
+        bool proxy_hint;
     } __attribute__((packed));
 
     class SocketServer {
@@ -140,6 +142,8 @@ namespace sys {
                      cli_data;
         sha256        sha_imp;
         std::vector<char> CID;
+
+        bool proxy_hint = false;
         
     public:
         [[nodiscard]] std::vector<char>   getData() const { return this->cli_data;   }
@@ -148,9 +152,14 @@ namespace sys {
         [[nodiscard]] uint16_t            getPort() const { return htons(this->cli_header.sin_port); }
         [[nodiscard]] uint32_t            getHost() const { return this->cli_header WIN(.sin_addr.S_un.S_addr)LINUX(.sin_addr.s_addr); }
         [[nodiscard]] std::vector<char>    getCID() const { return this->CID; }
+        [[nodiscard]] bool           getProxyHint() const { return this->proxy_hint; }
 
         void setSocket(const Socket_t client) { this->cli_socket = client; }
         void setHeader(const SockIn_t client) { this->cli_header = client; }
+        void setProxyHint() {
+            this->proxy_hint = true;
+        }
+
         void setCID() {
             std::string hash = sha_imp.hash(inet_ntoa(cli_header.sin_addr), sha256::sha256_options::option_string_hash);
 

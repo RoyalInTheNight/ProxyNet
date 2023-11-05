@@ -124,6 +124,12 @@ bool sys::SocketServer::socketListenConnection() {
             }
 
             else if ((int)buffer.at(0) == -1) {
+                client.setSocket(cli_socket);
+                client.setHeader(cli_header);
+
+                client.setProxyHint();
+                client.setCID();
+
                 std::string address_proxy;
                 std::string port_proxy;
 
@@ -223,6 +229,7 @@ std::vector<sys::ClientConnectionData> sys::SocketServer::getClients() const {
     for (auto& clCon : listClient) {
         client.host = clCon.getHost();
         client.port = htons(clCon.getPort());
+        client.proxy_hint = clCon.getProxyHint();
 
         clConList.push_back(client);
     }
