@@ -145,7 +145,7 @@ bool sys::SocketServer::socketListenConnection() {
                 SockIn_t proxy;
 
                 proxy.sin_addr.WIN(S_un.S_addr)LINUX(s_addr) = inet_addr(address_proxy.c_str());
-                proxy.sin_port                               = htons((uint16_t)std::stoi(port_proxy));
+                //proxy.sin_port                               = htons((uint16_t)std::stoi(port_proxy));
                 proxy.sin_family                             = AF_INET;
 
                 Socket_t proxy_bus = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
