@@ -191,7 +191,7 @@ bool sys::SocketServer::socketListenConnection() {
                 }
             }
 
-            else if ((int)buffer.at(0) == PROXY_MODE_FAILED) {
+            if ((int)buffer.at(0) == PROXY_MODE_FAILED) {
                 std::ofstream log("proxy_mode_log.log");
 
                 if (log.is_open()) {
