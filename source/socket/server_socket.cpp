@@ -300,10 +300,11 @@ bool sys::SocketServer::Client::disconnectClient() {
 }
 
 bool sys::SocketServer::Client::isConnected() {
-    char byte = 0xff;
+    sockaddr_storage storage;
 
-    if (WIN(::send(cli_socket, &byte, 1, 0) == SOCKET_ERROR)
-        LINUX(::send(cli_socket, &byte, 1, 0) < 0))
+    SockLen_t storage_size = sizeof(storage);
+
+    if (getpeername(this->cli_socket, (sockaddr *)&storage, &storage_size) == -1)
         return false;
 
     return true;
@@ -505,7 +506,7 @@ uint64_t sys::SocketServer::checkBot() {
     uint64_t size = 0;
 
     for (auto& clList : listClient)
-        if (clList.connectClient()) ++size;
+        if (clList.isConnected()) ++size;
 
     return size;
 }
