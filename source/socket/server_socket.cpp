@@ -336,8 +336,6 @@ bool sys::SocketServer::Client::isConnected() {
 }
 
 std::string sys::SocketServer::readClientData(const std::string& CID) {
-    std::string readBuffer;
-
     for (auto& clList : listClient) {
         if (clList.getCID().data() == CID) {
             std::vector<char> _read(__INT16_MAX__);
@@ -348,11 +346,8 @@ std::string sys::SocketServer::readClientData(const std::string& CID) {
             if (::recv(cli_socket, _read.data(), __INT16_MAX__, 0) WIN( <= 0)LINUX( <= 0))
                 return "Socket error";
 
-            else {
-                readBuffer = _read.data();
-
-                return "Success recv";
-            }
+            else
+                return _read.data();
         }
     }
 
