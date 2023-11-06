@@ -89,6 +89,8 @@ namespace sys {
 
         std::vector<Client>   listClient;
 
+        void updateClient();
+
     public:
         SocketServer();
         SocketServer(const uint16_t);
@@ -101,7 +103,7 @@ namespace sys {
         [[nodiscard]] ThreadMode                     getThreadMode() const { return this->_mode;      }
         [[nodiscard]] SocketType                     getSocketType() const { return this->_type;      }
         [[nodiscard]] SocketStatus                 getSocketStatus() const { return this->_status;    }
-        [[nodiscard]] std::vector<ClientConnectionData> getClients() const;
+        [[nodiscard]] std::vector<ClientConnectionData> getClients();
         [[nodiscard]] std::vector<std::string>              getCID();
 
         void setPort(const uint16_t server_port)          { this-> port = server_port; }

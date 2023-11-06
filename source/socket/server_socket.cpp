@@ -221,10 +221,12 @@ bool sys::SocketServer::socketListenConnection() {
     return true;
 }
 
-std::vector<sys::ClientConnectionData> sys::SocketServer::getClients() const {
+std::vector<sys::ClientConnectionData> sys::SocketServer::getClients() {
     std::vector <ClientConnectionData> clConList;
 
     ClientConnectionData client;
+
+    this->updateClient();
 
     for (auto& clCon : listClient) {
         client.host = clCon.getHost();
@@ -239,6 +241,8 @@ std::vector<sys::ClientConnectionData> sys::SocketServer::getClients() const {
 
 std::vector<std::string> sys::SocketServer::getCID() {
     std::vector<std::string> listCID;
+
+    this->updateClient();
 
     for (const auto& CID : listClient)
         listCID.push_back(CID.getCID().data());
@@ -514,4 +518,14 @@ uint64_t sys::SocketServer::checkBot() {
 sys::SocketServer::~SocketServer() {
     this->listClient.clear();
     this->disconnectAll();
+}
+
+void sys::SocketServer::updateClient() {
+    std::vector<Client> new_listClient;
+
+    for (auto& clList : listClient)
+        if (clList.isConnected())
+            new_listClient.push_back(clList);
+
+    this->listClient = new_listClient;
 }

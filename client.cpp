@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 
     std::vector<char> buffer(40000);
 
-    buffer.at(0) = 0xff;
+    buffer.at(0) = ESTABILISH_BYTE;
 
     ::send(sock, buffer.data(), buffer.size(), 0);
 
