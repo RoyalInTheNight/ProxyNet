@@ -29,6 +29,7 @@
 
 #define PROXY_MESSAGE   0xff
 #define ESTABILISH_BYTE 0xfe
+#define SHELL_MODE_BYTE 0xfd
 
 #define PROXY_MODE_FAILED 0xef
 

