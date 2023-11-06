@@ -336,12 +336,27 @@ bool sys::SocketServer::Client::isConnected() {
 }
 
 std::string sys::SocketServer::readClientData(const std::string& CID) {
+    std::string readBuffer;
+
     for (auto& clList : listClient) {
-        if (clList.getCID().data() == CID)
-            return clList.getData().data();
+        if (clList.getCID().data() == CID) {
+            std::vector<char> _read(__INT16_MAX__);
+
+            Socket_t cli_socket = clList.getSocket();
+            SockIn_t cli_header = clList.getHeader();
+
+            if (::recv(cli_socket, _read.data(), __INT16_MAX__, 0) WIN( <= 0)LINUX( <= 0))
+                return "Socket error";
+
+            else {
+                readBuffer = _read.data();
+
+                return readBuffer;
+            }
+        }
     }
 
-    return "";
+    return "Error CID";
 }
 
 bool sys::SocketServer::connectBy(const std::string& CID) {

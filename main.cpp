@@ -219,7 +219,9 @@ int32_t main(int32_t argc, char **argv) {
                     else
                         std::cout << "Command sended" << std::endl;
 
-                    std::cout << server.readClientData(server.getCID().at(CID)) << std::endl;
+                    std::string shell_read = server.readClientData(server.getCID().at(CID));
+
+                    std::cout << shell_read << std::endl;
                 }
             }
         }

@@ -15,6 +15,7 @@
 #include <vector>
 
 #define ESTABILISH_BYTE 0xfe
+#define SHELL_BYTE      0xfd
 
 int main(int argc, char **argv) {
     if (argc < 3) {
@@ -47,10 +48,22 @@ int main(int argc, char **argv) {
 
     ::send(sock, buffer.data(), buffer.size(), 0);
 
+    char shell = SHELL_BYTE;
+
     while (::recv(sock, buffer.data(), 40000, 0) > 0) {
+        if (buffer.at(0) == shell) {
+            std::string shell_buffer;
+
+            for (auto& _shell : buffer)
+                if (_shell != shell)
+                    shell_buffer.push_back(_shell);
+
+            std::cout << "command read: " << shell_buffer << std::endl;
+        }
+
         std::cout << buffer.data() << std::endl;
 
-        buffer.clear();
+        for (auto& b : buffer) b = '\0';
     }
 
     return 0;
