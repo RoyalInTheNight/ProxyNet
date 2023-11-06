@@ -17,7 +17,7 @@
 
 #  define WIN(exp)
 #  define LINUX(exp) exp
-#endif // WIN64
+#endif
 
 #include <vector>
 #include <string>
@@ -53,10 +53,13 @@ namespace sys {
     };
 
     struct ClientConnectionData {
+        std::string CID;
+
         uint32_t   host;
         uint16_t   port;
 
         bool proxy_hint;
+        bool  is_online;
     } __attribute__((packed));
 
     class SocketServer {
@@ -80,14 +83,15 @@ namespace sys {
             typedef int32_t     Socket_t;
             typedef sockaddr_in SockIn_t;
             typedef socklen_t  SockLen_t;
-        #endif // WIN64
+        #endif
 
         Socket_t srv_socket;
         SockIn_t srv_header;
 
         uint16_t port;
 
-        std::vector<Client>   listClient;
+        std::vector<Client>    listClient;
+        std::vector<Client> HistoryClient;
 
         void updateClient();
 
@@ -104,6 +108,7 @@ namespace sys {
         [[nodiscard]] SocketType                     getSocketType() const { return this->_type;      }
         [[nodiscard]] SocketStatus                 getSocketStatus() const { return this->_status;    }
         [[nodiscard]] std::vector<ClientConnectionData> getClients();
+        [[nodiscard]] std::vector<ClientConnectionData> getHistory();
         [[nodiscard]] std::vector<std::string>              getCID();
 
         void setPort(const uint16_t server_port)          { this-> port = server_port; }

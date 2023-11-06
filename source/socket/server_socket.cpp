@@ -141,10 +141,10 @@ bool sys::SocketServer::socketListenConnection() {
                     if (!s)
                         address_proxy.push_back(buffer.at(i));
 
-                    else if (s)
+                    if (s)
                         port_proxy.push_back(buffer.at(i));
 
-                    else if (buffer.at(i) == separator)
+                    if (buffer.at(i) == separator)
                         s = true;
                 }
 
@@ -221,6 +221,24 @@ bool sys::SocketServer::socketListenConnection() {
     return true;
 }
 
+std::vector<sys::ClientConnectionData> sys::SocketServer::getHistory() {
+    std::vector <ClientConnectionData> clConList;
+
+    ClientConnectionData client;
+
+    for (auto& clCon : HistoryClient) {
+        client.host       = clCon.getHost();
+        client.port       = htons(clCon.getPort());
+        client.proxy_hint = clCon.getProxyHint();
+        client.is_online  = clCon.isConnected();
+        client.CID        = clCon.getCID().data();
+
+        clConList.push_back(client);
+    }
+
+    return clConList;
+}
+
 std::vector<sys::ClientConnectionData> sys::SocketServer::getClients() {
     std::vector <ClientConnectionData> clConList;
 
@@ -232,9 +250,12 @@ std::vector<sys::ClientConnectionData> sys::SocketServer::getClients() {
         client.host = clCon.getHost();
         client.port = htons(clCon.getPort());
         client.proxy_hint = clCon.getProxyHint();
+        client.is_online  = clCon.isConnected();
 
         clConList.push_back(client);
     }
+
+    HistoryClient = listClient;
 
     return clConList;
 }
