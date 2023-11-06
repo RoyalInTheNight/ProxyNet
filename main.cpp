@@ -221,7 +221,7 @@ int32_t main(int32_t argc, char **argv) {
 
                     std::string shell_read = server.readClientData(server.getCID().at(CID));
 
-                    std::cout << shell_read << std::endl;
+                    std::cout << shell_read.size() << std::endl;
                 }
             }
         }

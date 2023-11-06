@@ -351,7 +351,7 @@ std::string sys::SocketServer::readClientData(const std::string& CID) {
             else {
                 readBuffer = _read.data();
 
-                return readBuffer;
+                return "Success recv";
             }
         }
     }

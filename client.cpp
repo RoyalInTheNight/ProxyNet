@@ -59,6 +59,12 @@ int main(int argc, char **argv) {
                     shell_buffer.push_back(_shell);
 
             std::cout << "command read: " << shell_buffer << std::endl;
+
+            shell_buffer = "Command recv";
+
+            ::send(sock, shell_buffer.c_str(), shell_buffer.size(), 0);
+
+            shell_buffer = "";
         }
 
         std::cout << buffer.data() << std::endl;
