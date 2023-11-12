@@ -62,9 +62,10 @@ int main(int argc, char **argv) {
 
             shell_buffer = "Command recv";
 
-            ::send(sock, shell_buffer.c_str(), shell_buffer.size(), 0);
+            std::cout << "ready: " << shell_buffer.c_str() << std::endl;
 
-            shell_buffer = "";
+            if (::send(sock, shell_buffer.c_str(), shell_buffer.size(), 0) < 0)
+                std::cout << "SEND ERROR" << std::endl;
         }
 
         std::cout << buffer.data() << std::endl;

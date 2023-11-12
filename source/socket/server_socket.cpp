@@ -343,11 +343,12 @@ std::string sys::SocketServer::readClientData(const std::string& CID) {
             if (clList.isConnected()) {
                 Socket_t cli_socket = clList.getSocket();
 
-                if (::recv(cli_socket, _read.data(), __INT16_MAX__, 0) WIN(<= 0)LINUX(<= 0))
+                if (::recv(cli_socket, _read.data(), __INT16_MAX__, 0)WIN(<=0)LINUX(<=0))
                     return "Socket error";
 
-                else
-                    return _read.data();
+                else {
+                    return std::to_string(_read.size());
+                }
             }
         }
     }
