@@ -338,18 +338,20 @@ bool sys::SocketServer::Client::isConnected() {
 std::string sys::SocketServer::readClientData(const std::string& CID) {
     for (auto& clList : listClient) {
         if (clList.getCID().data() == CID) {
-            std::vector<char> _read(__INT16_MAX__);
+            char _read[__INT16_MAX__];
 
             if (clList.isConnected()) {
                 Socket_t cli_socket = clList.getSocket();
 
                 int bytes_read = 0;
 
-                if ((bytes_read = ::recv(cli_socket, _read.data(), __INT16_MAX__, 0))WIN(<=0)LINUX(<=0))
+                if ((bytes_read = ::recv(cli_socket, _read, __INT16_MAX__, 0))WIN(<=0)LINUX(<=0))
                     return "Socket error";
 
                 else {
-                    return std::to_string(bytes_read);
+                    std::string read_data = _read;
+
+                    return read_data;
                 }
             }
         }
