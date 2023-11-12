@@ -335,14 +335,19 @@ bool sys::SocketServer::Client::isConnected() {
     return true;
 }
 
+#include <iostream>
+
 bool sys::SocketServer::Client::readClientData(std::string *read_data) {
     std::vector<char> readBuffer;
 
     *read_data = "";
 
     if (this->isConnected()) {
-        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0))
+        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0)) {
+            std::cout << "This point error" << std::endl;
+
             return false;
+        }
 
         *read_data = readBuffer.data();
 
@@ -350,8 +355,11 @@ bool sys::SocketServer::Client::readClientData(std::string *read_data) {
     }
 
     else if (this->connectClient()) {
-        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0))
+        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0)) {
+            std::cout << "Connect point error" << std::endl;
+
             return false;
+        }
 
         *read_data = readBuffer.data();
 
