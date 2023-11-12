@@ -124,7 +124,7 @@ namespace sys {
         bool sendBy(const std::string&, const std::vector<char>&);
         bool sendBy(const std::string&, const std::string&);
 
-        std::string readClientData(const std::string&);
+        bool readClientData(const std::string&, std::string*);
 
         uint64_t sendAll(const void *, uint32_t);
         uint64_t sendAll(const std::vector<char>&);
@@ -184,6 +184,7 @@ namespace sys {
         bool sendClientData(void *, uint32_t);
         bool sendClientData(const std::vector<char>&);
         bool sendClientData(const std::string&);
+        bool readClientData(std::string*);
     };
 }
 

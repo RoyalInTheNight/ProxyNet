@@ -335,29 +335,39 @@ bool sys::SocketServer::Client::isConnected() {
     return true;
 }
 
-std::string sys::SocketServer::readClientData(const std::string& CID) {
-    for (auto& clList : listClient) {
-        if (clList.getCID().data() == CID) {
-            char _read[__INT16_MAX__];
+bool sys::SocketServer::Client::readClientData(std::string *read_data) {
+    std::vector<char> readBuffer;
 
-            if (clList.isConnected()) {
-                Socket_t cli_socket = clList.getSocket();
+    *read_data = "";
 
-                int bytes_read = 0;
+    if (this->isConnected()) {
+        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0))
+            return false;
 
-                if ((bytes_read = ::recv(cli_socket, _read, __INT16_MAX__, 0))WIN(<=0)LINUX(<=0))
-                    return "Socket error";
+        *read_data = readBuffer.data();
 
-                else {
-                    std::string read_data = _read;
-
-                    return read_data;
-                }
-            }
-        }
+        return true;
     }
 
-    return "Error CID";
+    else if (this->connectClient()) {
+        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0))
+            return false;
+
+        *read_data = readBuffer.data();
+
+        return true;
+    }
+
+    return false;
+}
+
+bool sys::SocketServer::readClientData(const std::string& CID, std::string *read_data) {
+    for (auto& clList : listClient) {
+        if (clList.getCID().data() == CID)
+            return clList.readClientData(read_data);
+    }
+
+    return false;
 }
 
 bool sys::SocketServer::connectBy(const std::string& CID) {
