@@ -47,8 +47,8 @@ private:
     void update(const uint8_t *, uint32_t);
     void final(uint8_t *);
 
-    unsigned int m_tot_len;
-    unsigned int m_len;
+    unsigned int m_tot_len = 0;
+    unsigned int m_len     = 0;
 
     static const unsigned int SHA224_256_BLOCK_SIZE = (512 / 8);
     static const unsigned int DIGEST_SIZE           = (256 / 8);

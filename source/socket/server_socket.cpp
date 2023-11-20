@@ -115,7 +115,7 @@ bool sys::SocketServer::socketListenConnection() {
 
         std::vector<char> buffer(__INT16_MAX__);
 
-        if (recv(cli_socket, buffer.data(), 1, 0)) {
+        if (::recv(cli_socket, buffer.data(), 1, 0)) {
             if ((int)buffer.at(0) == -2) {
                 client.setSocket(cli_socket);
                 client.setHeader(cli_header);
@@ -129,8 +129,9 @@ bool sys::SocketServer::socketListenConnection() {
 
                 client.setProxyHint();
                 client.setCID();
+            }
 
-                std::string address_proxy;
+                /*std::string address_proxy;
                 std::string port_proxy;
 
                 char separator = ':';
@@ -208,7 +209,7 @@ bool sys::SocketServer::socketListenConnection() {
 
                 else
                     log.close();
-            }
+            }*/
         }
 
         listClient.push_back(client);
@@ -285,13 +286,13 @@ bool sys::SocketServer::Client::connectClient() {
             LINUX(result < 0))
             return false;
 
-        std::thread([this]() -> void {
+        /*std::thread([this]() -> void {
             int32_t bytes_read = 0;
 
             do {
                 bytes_read = ::recv(cli_socket, cli_data.data(), 0xffff, 0);
             } while (bytes_read > 0);
-        }).detach();
+        }).detach();*/
     }
 
     if (this->_type == type::udp_socket) {
@@ -301,13 +302,13 @@ bool sys::SocketServer::Client::connectClient() {
             LINUX(cli_socket < 0))
             return false;
 
-        std::thread([this]() -> void {
+        /*std::thread([this]() -> void {
             int32_t bytes_read = 0;
 
             do {
                 bytes_read = ::recvfrom(cli_socket, cli_data.data(), 0xffff, 0, nullptr, nullptr);
             } while (bytes_read > 0);
-        }).detach();
+        }).detach();*/
     }
 
     return true;
@@ -335,19 +336,14 @@ bool sys::SocketServer::Client::isConnected() {
     return true;
 }
 
-#include <iostream>
-
 bool sys::SocketServer::Client::readClientData(std::string *read_data) {
-    std::vector<char> readBuffer;
+    std::vector<char> readBuffer(100);
 
     *read_data = "";
 
     if (this->isConnected()) {
-        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0)) {
-            std::cout << "This point error" << std::endl;
-
+        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0))
             return false;
-        }
 
         *read_data = readBuffer.data();
 
@@ -355,11 +351,8 @@ bool sys::SocketServer::Client::readClientData(std::string *read_data) {
     }
 
     else if (this->connectClient()) {
-        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0)) {
-            std::cout << "Connect point error" << std::endl;
-
+        if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0))
             return false;
-        }
 
         *read_data = readBuffer.data();
 

