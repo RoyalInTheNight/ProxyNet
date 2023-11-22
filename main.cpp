@@ -174,6 +174,37 @@ int32_t main(int32_t argc, char **argv) {
             }
         }
 
+        if (sh == "update") {
+            uint32_t CID = 0;
+
+            int32_t count = 0;
+
+            for (const auto& CID_id : server.getCID()) {
+                std::cout << count << ". " << CID_id.data() << std::endl;
+
+                ++count;
+            }
+
+            std::cout << "CID> ";
+            std::cin >> CID;
+
+            if (CID >= server.getCID().size() || CID < 0)
+                std::cout << "Invalid CID" << std::endl;
+
+            else {
+                std::string data;
+
+                std::cout << "filename> ";
+                std::cin >> data;
+
+                if (!server.updateBy(server.getCID().at(CID), data))
+                    std::cout << "Send error" << std::endl;
+
+                else
+                    std::cout << "Message delivered" << std::endl;
+            }
+        }
+
         if (sh == "sendAll") {
             std::string data;
 
@@ -181,6 +212,17 @@ int32_t main(int32_t argc, char **argv) {
             std::cin >> data;
 
             uint64_t failed = server.sendAll(data);
+
+            std::cout << "Message delivered" << "\n\tFails: " << failed << std::endl;
+        }
+
+        if (sh == "updateAll") {
+            std::string data;
+
+            std::cout << "filename> ";
+            std::cin >> data;
+
+            uint32_t failed = server.updateAll(data);
 
             std::cout << "Message delivered" << "\n\tFails: " << failed << std::endl;
         }

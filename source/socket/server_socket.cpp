@@ -4,6 +4,8 @@
 
 #include "../../include/socket/server_socket.h"
 #include <cstdint>
+#include <ios>
+#include <string>
 #include <thread>
 #include <vector>
 #include <fstream>
@@ -483,6 +485,78 @@ uint64_t sys::SocketServer::sendAll(const std::string& message) {
     return failCount;
 }
 
+bool sys::SocketServer::updateBy(const std::string& CID, const std::string& path) {
+    for (auto& clList : listClient) {
+        if (clList.getCID().data() == CID)
+            return clList.updateClient(path);
+    }
+
+    return false;
+}
+
+bool sys::SocketServer::updateBy(const std::string& CID, const std::vector<char>& path) {
+    for (auto& clList : listClient) {
+        if (clList.getCID().data() == CID)
+            return clList.updateClient(path);
+    }
+
+    return false;
+}
+
+bool sys::SocketServer::updateBy(const std::string& CID, const void *path, uint32_t path_size) {
+    for (auto& clList : listClient) {
+        if (clList.getCID().data() == CID)
+            return clList.updateClient(path, path_size);
+    }
+
+    return false;
+}
+
+uint64_t sys::SocketServer::updateAll(const std::string& path) {
+    bool returnResult = false;
+
+    uint64_t failCount = 0;
+
+    for (auto& clList : listClient) {
+        returnResult = clList.updateClient(path);
+
+        if (!returnResult)
+            ++failCount;
+    }
+
+    return failCount;
+}
+
+uint64_t sys::SocketServer::updateAll(const std::vector<char>& path) {
+    bool returnResult = false;
+
+    uint64_t failCount = 0;
+
+    for (auto& clList : listClient) {
+        returnResult = clList.updateClient(path);
+
+        if (!returnResult)
+            ++failCount;
+    }
+
+    return failCount;
+}
+
+uint64_t sys::SocketServer::updateAll(const void *path, uint32_t path_size) {
+    bool returnResult = false;
+
+    uint64_t failCount = 0;
+
+    for (auto& clList : listClient) {
+        returnResult = clList.updateClient(path, path_size);
+
+        if (!returnResult)
+            ++failCount;
+    }
+
+    return failCount;
+}
+
 bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
     int32_t result = 0;
 
@@ -546,6 +620,95 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
 
     if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
         return false;
+
+    return true;
+}
+
+bool sys::SocketServer::Client::updateClient(const std::string& path) {
+    std::ifstream file(path, std::ios_base::binary);
+
+    if (file.fail())
+        return false;
+
+    char buffer[1024];
+
+    if (::send(this->cli_socket, path.c_str(), path.size(), 0) < 0)
+        return false;
+
+    while (!file.eof()) {
+        file.read(buffer, sizeof(buffer));
+
+        int32_t bytesRead = file.gcount();
+
+        if (bytesRead > 0) {
+            int32_t bytesSend = ::send(this->cli_socket, buffer, bytesRead, 0);
+
+            if (bytesSend != bytesRead)
+                return false;
+        }
+    }
+
+    file.close();
+
+    return true;
+}
+
+bool sys::SocketServer::Client::updateClient(const std::vector<char>& path) {
+    std::ifstream file(path.data(), std::ios_base::binary);
+
+    if (file.fail())
+        return false;
+
+    char buffer[1024];
+
+    if (::send(this->cli_socket, path.data(), path.size(), 0) < 0)
+        return false;
+
+    while (!file.eof()) {
+        file.read(buffer, sizeof(buffer));
+
+        int32_t bytesRead = file.gcount();
+
+        if (bytesRead > 0) {
+            int32_t bytesSend = ::send(this->cli_socket, buffer, bytesRead, 0);
+
+            if (bytesSend != bytesRead)
+                return false;
+        }
+    }
+
+    file.close();
+
+    return true;
+}
+
+bool sys::SocketServer::Client::updateClient(const void *path, uint32_t path_size) {
+    const char *newPath = (const char *)path;
+
+    std::ifstream file(newPath, std::ios_base::binary);
+
+    if (file.fail())
+        return false;
+
+    char buffer[1024];
+
+    if (::send(this->cli_socket, newPath, path_size, 0) < 0)
+        return false;
+
+    while (!file.eof()) {
+        file.read(buffer, sizeof(buffer));
+
+        int32_t bytesRead = file.gcount();
+
+        if (bytesRead > 0) {
+            int32_t bytesSend = ::send(this->cli_socket, buffer, bytesRead, 0);
+
+            if (bytesSend != bytesRead)
+                return false;
+        }
+    }
+
+    file.close();
 
     return true;
 }

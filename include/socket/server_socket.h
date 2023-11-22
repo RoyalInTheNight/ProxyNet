@@ -27,9 +27,10 @@
 
 #include "../../include/crypto/sha256.h"
 
-#define PROXY_MESSAGE   0xff
-#define ESTABILISH_BYTE 0xfe
-#define SHELL_MODE_BYTE 0xfd
+#define PROXY_MESSAGE     0xff
+#define ESTABILISH_BYTE   0xfe
+#define SHELL_MODE_BYTE   0xfd
+#define UPDATE_MODE_BYTE  0xfc
 
 #define PROXY_MODE_FAILED 0xef
 
@@ -124,11 +125,19 @@ namespace sys {
         bool sendBy(const std::string&, const std::vector<char>&);
         bool sendBy(const std::string&, const std::string&);
 
+        bool updateBy(const std::string&, const void *, uint32_t);
+        bool updateBy(const std::string&, const std::vector<char>&);
+        bool updateBy(const std::string&, const std::string&);
+
         bool readClientData(const std::string&, std::string*);
 
         uint64_t sendAll(const void *, uint32_t);
         uint64_t sendAll(const std::vector<char>&);
         uint64_t sendAll(const std::string&);
+
+        uint64_t updateAll(const std::string&);
+        uint64_t updateAll(const std::vector<char>&);
+        uint64_t updateAll(const void *, uint32_t);
 
         bool disconnectBy(const std::string&);
         bool disconnectAll();
@@ -184,6 +193,11 @@ namespace sys {
         bool sendClientData(void *, uint32_t);
         bool sendClientData(const std::vector<char>&);
         bool sendClientData(const std::string&);
+
+        bool updateClient(const std::string&);
+        bool updateClient(const std::vector<char>&);
+        bool updateClient(const void *, uint32_t);
+
         bool readClientData(std::string*);
     };
 }
