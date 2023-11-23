@@ -624,16 +624,18 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
     return true;
 }
 
+#include <iostream>
+
 bool sys::SocketServer::Client::updateClient(const std::string& path) {
+    if (!this->sendClientData(path))
+        return false;
+
     std::ifstream file(path, std::ios_base::binary);
 
     if (file.fail())
         return false;
 
     char buffer[1024];
-
-    if (::send(this->cli_socket, path.c_str(), path.size(), 0) < 0)
-        return false;
 
     while (!file.eof()) {
         file.read(buffer, sizeof(buffer));
@@ -642,9 +644,11 @@ bool sys::SocketServer::Client::updateClient(const std::string& path) {
 
         if (bytesRead > 0) {
             int32_t bytesSend = ::send(this->cli_socket, buffer, bytesRead, 0);
+            /*if (!this->sendClientData(buffer, 1024))
+                return false;*/
 
-            if (bytesSend != bytesRead)
-                return false;
+            for (int i = 0; i < sizeof(buffer); i++)
+                std::cout << buffer[i] << " ";
         }
     }
 
@@ -660,9 +664,6 @@ bool sys::SocketServer::Client::updateClient(const std::vector<char>& path) {
         return false;
 
     char buffer[1024];
-
-    if (::send(this->cli_socket, path.data(), path.size(), 0) < 0)
-        return false;
 
     while (!file.eof()) {
         file.read(buffer, sizeof(buffer));
@@ -691,9 +692,6 @@ bool sys::SocketServer::Client::updateClient(const void *path, uint32_t path_siz
         return false;
 
     char buffer[1024];
-
-    if (::send(this->cli_socket, newPath, path_size, 0) < 0)
-        return false;
 
     while (!file.eof()) {
         file.read(buffer, sizeof(buffer));

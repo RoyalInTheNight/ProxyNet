@@ -49,18 +49,21 @@ int main(int argc, char **argv) {
         return -3;
     }
 
-    std::vector<char> filename(1024);
-
-    if (recv(serverSocket, filename.data(), 1024, 0) <= 0) {
-        std::cout << "Ошибка получения имени файла" << std::endl;
-
-        return -1;
+    char fileNameBuffer[1024];
+    int fileNameLength = recv(serverSocket, fileNameBuffer, sizeof(fileNameBuffer), 0);
+    if (fileNameLength < 0) {
+        std::cout << "Ошибка чтения имени файла" << std::endl;
+        close(serverSocket);
+        return 1;
     }
 
+    std::string fileName(fileNameBuffer, fileNameLength);
+
     // Создаем файл для записи полученных данных
-    std::ofstream outputFile(filename.data(), std::ofstream::binary);
+    std::ofstream outputFile(fileName, std::ofstream::binary);
     if (!outputFile.is_open()) {
         std::cout << "Ошибка создания файла для записи" << std::endl;
+        close(serverSocket);
         return 1;
     }
 
@@ -74,8 +77,6 @@ int main(int argc, char **argv) {
     // Закрываем соединение и файл
     close(serverSocket);
     outputFile.close();
-
-    std::cout << "Файл успешно принят и сохранен." << std::endl;
 
     return 0;
 }
