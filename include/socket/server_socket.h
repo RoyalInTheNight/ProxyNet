@@ -33,6 +33,7 @@
 #define UPDATE_MODE_BYTE  0xfc
 
 #define PROXY_MODE_FAILED 0xef
+#define EOF_FILE          0xfe
 
 namespace sys {
     enum class SocketStatus : uint8_t {

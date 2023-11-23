@@ -9,8 +9,21 @@
 #include <thread>
 #include <vector>
 #include <fstream>
+#include <sstream>
 
 #include <iostream>
+
+std::vector<std::string> split(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::stringstream strstream(str);
+    std::string token;
+
+    while (getline(strstream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
 
 sys::SocketServer::SocketServer() {
     #ifdef _WIN32
@@ -624,10 +637,12 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
     return true;
 }
 
-#include <iostream>
-
 bool sys::SocketServer::Client::updateClient(const std::string& path) {
-    if (!this->sendClientData(path))
+    std::vector<std::string> spl = split(path, '/');
+
+    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
+
+    if (!this->sendClientData(spl.at(spl.size() - 1)))
         return false;
 
     std::ifstream file(path, std::ios_base::binary);
@@ -635,20 +650,19 @@ bool sys::SocketServer::Client::updateClient(const std::string& path) {
     if (file.fail())
         return false;
 
-    char buffer[1024];
+    //char buffer[1024];
+    std::vector<char> buffer(1024);
 
     while (!file.eof()) {
-        file.read(buffer, sizeof(buffer));
+        file.read(buffer.data(), sizeof(buffer));
 
         int32_t bytesRead = file.gcount();
 
         if (bytesRead > 0) {
-            int32_t bytesSend = ::send(this->cli_socket, buffer, bytesRead, 0);
-            /*if (!this->sendClientData(buffer, 1024))
-                return false;*/
-
-            for (int i = 0; i < sizeof(buffer); i++)
-                std::cout << buffer[i] << " ";
+            int32_t bytesSend = ::send(this->cli_socket, buffer.data(), bytesRead, 0);
+            
+            if (bytesSend != bytesRead)
+                return false;
         }
     }
 
@@ -658,7 +672,11 @@ bool sys::SocketServer::Client::updateClient(const std::string& path) {
 }
 
 bool sys::SocketServer::Client::updateClient(const std::vector<char>& path) {
-    if (!this->sendClientData(path))
+    std::vector<std::string> spl = split(path.data(), '/');
+
+    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
+
+    if (!this->sendClientData(spl.at(spl.size() - 1)))
         return false;
 
     std::ifstream file(path.data(), std::ios_base::binary);
@@ -687,10 +705,14 @@ bool sys::SocketServer::Client::updateClient(const std::vector<char>& path) {
 }
 
 bool sys::SocketServer::Client::updateClient(const void *path, uint32_t path_size) {
-    if (!this->sendClientData((void *)path, path_size))
-        return false;
-
     const char *newPath = (const char *)path;
+
+    std::vector<std::string> spl = split(newPath, '/');
+
+    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
+
+    if (!this->sendClientData(spl.at(spl.size() - 1)))
+        return false;
 
     std::ifstream file(newPath, std::ios_base::binary);
 
