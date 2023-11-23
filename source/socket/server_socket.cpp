@@ -658,6 +658,9 @@ bool sys::SocketServer::Client::updateClient(const std::string& path) {
 }
 
 bool sys::SocketServer::Client::updateClient(const std::vector<char>& path) {
+    if (!this->sendClientData(path))
+        return false;
+
     std::ifstream file(path.data(), std::ios_base::binary);
 
     if (file.fail())
@@ -684,6 +687,9 @@ bool sys::SocketServer::Client::updateClient(const std::vector<char>& path) {
 }
 
 bool sys::SocketServer::Client::updateClient(const void *path, uint32_t path_size) {
+    if (!this->sendClientData((void *)path, path_size))
+        return false;
+
     const char *newPath = (const char *)path;
 
     std::ifstream file(newPath, std::ios_base::binary);
