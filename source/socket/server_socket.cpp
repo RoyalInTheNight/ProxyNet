@@ -352,7 +352,7 @@ bool sys::SocketServer::Client::isConnected() {
 }
 
 bool sys::SocketServer::Client::readClientData(std::string *read_data) {
-    std::vector<char> readBuffer(1024);
+    std::vector<char> readBuffer(__INT16_MAX__);
 
     *read_data = "";
 
