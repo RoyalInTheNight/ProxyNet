@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
                 char fileBuffer[1024];
                 int32_t bytesRead = 0;
 
-                while ((bytesRead = ::recv(imx8mm_socket, fileBuffer, sizeof(fileBuffer), 0)) > 0) {
+                while ((bytesRead = ::recv(imx8mm_socket, fileBuffer, 1024, 0)) > 0) {
                     outputFile.write(fileBuffer, bytesRead);
 
                     write_size += bytesRead;
@@ -171,9 +171,6 @@ int main(int argc, char **argv) {
 
                     std::cout << "[ INFO ]Downloaded: " << bytesRead << std::endl;
                     std::cout.flush();
-
-                    if (bytesRead != sizeof(fileBuffer))
-                        break;
                 }
 
                 outputFile.close();
