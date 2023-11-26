@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 
         if (WSAStatup(MAKEWORD(2, 2), &wsa) != 0)
             std::cout << "[FAILED]SYSTEM ERROR" << std::endl;
-    #endif // _WIN32
+    #endif
 
     const char shell_mode      = SHELL_MODE_BYTE;
     const char update_mode     = UPDATE_MODE_BYTE;
@@ -136,21 +136,17 @@ int main(int argc, char **argv) {
             }
 
             if (update_mode_byte) {
-                //std::vector<std::string> splitData = split(imx8mm_comm_buffer.data(), update_mode);
+                std::vector<std::string> splitData = split(imx8mm_comm_buffer.data(), update_mode);
 
-                std::string path;
+                std::string path = splitData.at(0);
+                std::string size = splitData.at(1);
 
-                for (auto& com: imx8mm_comm_buffer)
-                    if (com != update_mode)
-                        path.push_back(com);
-                //std::string size = splitData.at(1);
-
-                //uint32_t file_size = std::stoi(size);
+                uint32_t file_size = std::stoi(size);
                 uint32_t write_size = 0;
 
                 int percent = 0;
 
-                std::cout << "[ INFO ]Readed file name: " << path << std::endl;
+                std::cout << "[ INFO ]Readed file name: " << path << std::endl << "[ INFO ]File size: " << size << std::endl;
                 
                 std::ofstream outputFile(path, std::ofstream::binary);
 
