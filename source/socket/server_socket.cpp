@@ -646,7 +646,7 @@ bool sys::SocketServer::Client::updateClient(const std::string& path) {
         return false;
 
     spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
-    spl.at(spl.size() - 1) += std::to_string(file.tellg());
+    //spl.at(spl.size() - 1) += std::to_string(file.tellg());
 
     if (!this->sendClientData(spl.at(spl.size() - 1)))
         return false;
