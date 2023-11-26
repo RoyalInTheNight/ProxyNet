@@ -1,3 +1,17 @@
+#ifdef _WIN32
+#include <WinSock2.h>
+#include <ws2tcpip.h>
+#include <iostream>
+#include <fstream>
+#include <ostream>
+#include <string>
+#include <unistd.h>
+#include <vector>
+
+#define WIN(exp) exp
+#define LINUX(exp)
+
+#else
 #include <arpa/inet.h>
 #include <iostream>
 #include <fstream>
@@ -8,9 +22,48 @@
 #include <unistd.h>
 #include <vector>
 
+#define WIN(exp)
+#define LINUX(exp) exp
+
+#endif // _WIN32
+
+#include <memory>
+#include <array>
+#include <sstream>
+
+#include <iomanip>
+#include <chrono>
+#include <thread>
+
 #define SHELL_MODE_BYTE  0xfd
 #define UPDATE_MODE_BYTE 0xfc
 #define ESTABILISH_BYTE  0xfe
+
+std::string exec(const char *cmd) {
+    std::array<char, 128> buff;
+    std::string result;
+
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+
+    if (!pipe) return "";
+
+    while (fgets(buff.data(), buff.size(), pipe.get()) != nullptr)
+        result += buff.data();
+
+    return result;
+}
+
+std::vector<std::string> split(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::stringstream strstream(str);
+    std::string token;
+
+    while (getline(strstream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
 
 int main(int argc, char **argv) {
     if (argc < 3) {
@@ -32,9 +85,9 @@ int main(int argc, char **argv) {
     imx8mm.sin_port        = htons(std::stoi(port));
     imx8mm.sin_family      = AF_INET;
 
-    int32_t imx8mm_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    WIN(SOCKET)LINUX(int32_t) imx8mm_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    if (imx8mm_socket < 0) {
+    if (WIN(imx8mm_socket == INVALID_SOCKET)LINUX(imx8mm_socket < 0)) {
         std::cout << "[FAILED]Socket create failed" << std::endl;
 
         return -2;
@@ -42,7 +95,7 @@ int main(int argc, char **argv) {
 
     int32_t imx8mm_debug = ::connect(imx8mm_socket, (const sockaddr *)&imx8mm, sizeof(imx8mm));
 
-    if (imx8mm_debug < 0) {
+    if (WIN(imx8mm_debug == SOCKET_ERROR)LINUX(imx8mm_debug < 0)) {
         std::cout << "[FAILED]Connect error" << std::endl;
 
         return -3;
@@ -65,7 +118,7 @@ int main(int argc, char **argv) {
     bool update_mode_byte = false;
     bool shell_mode_byte  = false;
 
-    while (::recv(imx8mm_socket, imx8mm_comm_buffer.data(), imx8mm_comm_buffer.size(), 0)) {
+    while (::recv(imx8mm_socket, imx8mm_comm_buffer.data(), 1024, 0)) {
         if (imx8mm_comm_buffer.size() > 0) {
             for (auto& com : imx8mm_comm_buffer) {
                 if (com == update_mode)
@@ -76,15 +129,17 @@ int main(int argc, char **argv) {
             }
 
             if (update_mode_byte) {
-                std::string path = imx8mm_comm_buffer.data();
+                std::vector<std::string> splitData = split(imx8mm_comm_buffer.data(), update_mode);
 
-                /*for (int32_t i = 0; i < path.size(); i++)
-                    if (path.at(i) == update_mode)
-                        path.at(i) = 0;*/
+                std::string path = splitData.at(0);
+                std::string size = splitData.at(1);
 
-                path.pop_back();
+                uint32_t file_size = std::stoi(size);
+                uint32_t write_size = 0;
 
-                std::cout << "[ INFO ]Readed file name: " << path << std::endl << "[ INFO ]File name size: " << path.size() << std::endl;
+                int percent = 0;
+
+                std::cout << "[ INFO ]Readed file name: " << path << std::endl << "[ INFO ]File size: " << size << std::endl;
                 
                 std::ofstream outputFile(path, std::ofstream::binary);
 
@@ -100,8 +155,19 @@ int main(int argc, char **argv) {
                 char fileBuffer[1024];
                 int32_t bytesRead = 0;
 
-                while ((bytesRead = ::recv(imx8mm_socket, fileBuffer, sizeof(fileBuffer), 0)) > 0)
+                while ((bytesRead = ::recv(imx8mm_socket, fileBuffer, sizeof(fileBuffer), 0)) > 0) {
                     outputFile.write(fileBuffer, bytesRead);
+
+                    write_size += bytesRead;
+
+                    //percent = (bytesRead / file_size) * 100;
+
+                    std::cout << "[ INFO ]Downloaded: " << bytesRead << std::endl;
+                    std::cout.flush();
+
+                    if (bytesRead != sizeof(fileBuffer))
+                        break;
+                }
 
                 outputFile.close();
 
@@ -110,15 +176,34 @@ int main(int argc, char **argv) {
                 std::cout << "[ INFO ]File get success" << std::endl;
                 
                 imx8mm_comm_buffer.clear();
-                imx8mm_comm_buffer.resize(imx8mm_comm_buffer.size());
+                imx8mm_comm_buffer.resize(1024);
             }
 
             else if (shell_mode_byte) {
                 shell_mode_byte = false;
+
+                std::string execlp;
+
+                for (auto& ch : imx8mm_comm_buffer)
+                    if (ch != shell_mode)
+                        execlp.push_back(ch);
+
+                std::string command_result = exec(execlp.c_str());
+
+                if (command_result != "")
+                    if (::send(imx8mm_socket, command_result.c_str(), command_result.size(), 0)WIN( < 0)LINUX( < 0))
+                        std::cout << "[FAILED]Error send command result" << std::endl;
+
+                imx8mm_comm_buffer.clear();
+                imx8mm_comm_buffer.resize(1024);
             }
 
-            else
+            else {
                 std::cout << "mode not found: " << imx8mm_comm_buffer.data() << std::endl;
+                
+                imx8mm_comm_buffer.clear();
+                imx8mm_comm_buffer.resize(1024);
+            }
         }
     }
 }

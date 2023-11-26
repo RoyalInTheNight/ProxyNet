@@ -252,6 +252,9 @@ int32_t main(int32_t argc, char **argv) {
                     std::cout << "user-" << server.getCID().at(CID).data() << "> ";
                     std::cin >> data;
 
+                    if (data == "exit")
+                        break;
+
                     shell.push_back(SHELL_MODE_BYTE);
                     shell += data;
 
@@ -268,6 +271,9 @@ int32_t main(int32_t argc, char **argv) {
 
                     std::cout << shell_read.size() << std::endl;
                     std::cout << shell_read << std::endl;
+
+                    shell.clear();
+                    data.clear();
                 }
             }
         }

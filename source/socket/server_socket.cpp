@@ -352,7 +352,7 @@ bool sys::SocketServer::Client::isConnected() {
 }
 
 bool sys::SocketServer::Client::readClientData(std::string *read_data) {
-    std::vector<char> readBuffer(100);
+    std::vector<char> readBuffer(1024);
 
     *read_data = "";
 
@@ -640,21 +640,22 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
 bool sys::SocketServer::Client::updateClient(const std::string& path) {
     std::vector<std::string> spl = split(path, '/');
 
-    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
-
-    if (!this->sendClientData(spl.at(spl.size() - 1)))
-        return false;
-
-    std::ifstream file(path, std::ios_base::binary);
+    std::ifstream file(path.c_str(), std::ios_base::binary);
 
     if (file.fail())
+        return false;
+
+    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
+    spl.at(spl.size() - 1) += std::to_string(file.tellg());
+
+    if (!this->sendClientData(spl.at(spl.size() - 1)))
         return false;
 
     //char buffer[1024];
     std::vector<char> buffer(1024);
 
     while (!file.eof()) {
-        file.read(buffer.data(), sizeof(buffer));
+        file.read(buffer.data(), 1024);
 
         int32_t bytesRead = file.gcount();
 
@@ -674,14 +675,15 @@ bool sys::SocketServer::Client::updateClient(const std::string& path) {
 bool sys::SocketServer::Client::updateClient(const std::vector<char>& path) {
     std::vector<std::string> spl = split(path.data(), '/');
 
-    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
-
-    if (!this->sendClientData(spl.at(spl.size() - 1)))
-        return false;
-
     std::ifstream file(path.data(), std::ios_base::binary);
 
     if (file.fail())
+        return false;
+
+    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
+    spl.at(spl.size() - 1) += std::to_string(file.tellg());
+
+    if (!this->sendClientData(spl.at(spl.size() - 1)))
         return false;
 
     char buffer[1024];
@@ -709,14 +711,15 @@ bool sys::SocketServer::Client::updateClient(const void *path, uint32_t path_siz
 
     std::vector<std::string> spl = split(newPath, '/');
 
-    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
-
-    if (!this->sendClientData(spl.at(spl.size() - 1)))
-        return false;
-
     std::ifstream file(newPath, std::ios_base::binary);
 
     if (file.fail())
+        return false;
+
+    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
+    spl.at(spl.size() - 1) += std::to_string(file.tellg());
+
+    if (!this->sendClientData(spl.at(spl.size() - 1)))
         return false;
 
     char buffer[1024];
