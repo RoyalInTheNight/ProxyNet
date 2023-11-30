@@ -144,8 +144,6 @@ int main(int argc, char **argv) {
                 uint32_t file_size = std::stoi(size);
                 uint32_t write_size = 0;
 
-                int percent = 0;
-
                 std::cout << "[ INFO ]Readed file name: " << path << std::endl << "[ INFO ]File size: " << size << std::endl;
                 
                 std::ofstream outputFile(path, std::ofstream::binary);
@@ -162,15 +160,17 @@ int main(int argc, char **argv) {
                 char fileBuffer[1024];
                 int32_t bytesRead = 0;
 
+                std::cout << "[ INFO ]Start download file" << std::endl;
+
                 while ((bytesRead = ::recv(imx8mm_socket, fileBuffer, 1024, 0)) > 0) {
                     outputFile.write(fileBuffer, bytesRead);
 
                     write_size += bytesRead;
 
-                    //percent = (bytesRead / file_size) * 100;
+                    if ((write_size - 1024) == file_size)
+                        break;
 
-                    std::cout << "[ INFO ]Downloaded: " << bytesRead << std::endl;
-                    std::cout.flush();
+                    std::cout << "[ INFO ]Downloaded: " << write_size << " target" << file_size << std::endl;
                 }
 
                 outputFile.close();

@@ -640,18 +640,23 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
 bool sys::SocketServer::Client::updateClient(const std::string& path) {
     std::vector<std::string> spl = split(path, '/');
 
-    std::ifstream file(path.c_str(), std::ios_base::binary);
+    std::ifstream file(path, std::ios_base::binary);
 
-    if (file.fail())
+    file.seekg(0, std::ios_base::end);
+    uint32_t fileSize = file.tellg();
+
+    file.close();
+    file.open(path, std::ios_base::binary);
+
+    std::string sFileSize = std::to_string(fileSize);
+    std::string upString = spl.at(spl.size() - 1);
+
+    upString.push_back(UPDATE_MODE_BYTE);
+    upString += sFileSize;
+
+    if (!this->sendClientData(upString))
         return false;
 
-    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
-    spl.at(spl.size() - 1) += std::to_string(file.tellg());
-
-    if (!this->sendClientData(spl.at(spl.size() - 1)))
-        return false;
-
-    //char buffer[1024];
     std::vector<char> buffer(1024);
 
     while (!file.eof()) {
@@ -680,21 +685,30 @@ bool sys::SocketServer::Client::updateClient(const std::vector<char>& path) {
     if (file.fail())
         return false;
 
-    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
-    spl.at(spl.size() - 1) += std::to_string(file.tellg());
+    file.seekg(0, std::ios_base::end);
+    uint32_t fileSize = file.tellg();
 
-    if (!this->sendClientData(spl.at(spl.size() - 1)))
+    file.close();
+    file.open(path.data(), std::ios_base::binary);
+
+    std::string sFileSize = std::to_string(fileSize);
+    std::string upString = spl.at(spl.size() - 1);
+
+    upString.push_back(UPDATE_MODE_BYTE);
+    upString += sFileSize;
+
+    if (!this->sendClientData(upString))
         return false;
 
-    char buffer[1024];
+    std::vector<char> buffer(1024);
 
     while (!file.eof()) {
-        file.read(buffer, sizeof(buffer));
+        file.read(buffer.data(), 1024);
 
         int32_t bytesRead = file.gcount();
 
         if (bytesRead > 0) {
-            int32_t bytesSend = ::send(this->cli_socket, buffer, bytesRead, 0);
+            int32_t bytesSend = ::send(this->cli_socket, buffer.data(), bytesRead, 0);
 
             if (bytesSend != bytesRead)
                 return false;
@@ -716,21 +730,33 @@ bool sys::SocketServer::Client::updateClient(const void *path, uint32_t path_siz
     if (file.fail())
         return false;
 
-    spl.at(spl.size() - 1).push_back(UPDATE_MODE_BYTE);
-    spl.at(spl.size() - 1) += std::to_string(file.tellg());
+    file.seekg(0, std::ios_base::end);
+    uint32_t fileSize = file.tellg();
 
-    if (!this->sendClientData(spl.at(spl.size() - 1)))
+    file.close();
+    file.open(newPath, std::ios_base::binary);
+
+    std::string sFileSize = std::to_string(fileSize);
+    std::string upString = spl.at(spl.size() - 1);
+
+    upString.push_back(UPDATE_MODE_BYTE);
+    upString += sFileSize;
+
+    if (!this->sendClientData(upString))
         return false;
 
-    char buffer[1024];
+    if (file.fail())
+        return false;
+
+    std::vector<char> buffer(1024);
 
     while (!file.eof()) {
-        file.read(buffer, sizeof(buffer));
+        file.read(buffer.data(), 1024);
 
         int32_t bytesRead = file.gcount();
 
         if (bytesRead > 0) {
-            int32_t bytesSend = ::send(this->cli_socket, buffer, bytesRead, 0);
+            int32_t bytesSend = ::send(this->cli_socket, buffer.data(), bytesRead, 0);
 
             if (bytesSend != bytesRead)
                 return false;

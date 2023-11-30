@@ -184,7 +184,6 @@ namespace sys {
             for (const auto& symbol : hash)
                 CID.push_back(symbol);
         }
-        // void setClientID(const std::vector<char>& CID) { this->cid = CID;  }
 
         bool connectClient();
         bool disconnectClient();
