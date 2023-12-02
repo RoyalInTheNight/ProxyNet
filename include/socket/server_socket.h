@@ -145,6 +145,9 @@ namespace sys {
         bool disconnectBy(const std::string&);
         bool disconnectAll();
 
+        void removeClient(const std::string&);
+        void removeAll();
+
         uint64_t checkBot();
         uint64_t sizeListBot();
 

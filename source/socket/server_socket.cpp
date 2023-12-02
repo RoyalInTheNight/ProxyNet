@@ -13,6 +13,14 @@
 
 #include <iostream>
 
+
+namespace sys {
+    template <typename T>
+    void remove(std::vector<T>& v, size_t index) {
+        v.erase(v.begin() + index);
+    }
+}
+
 std::vector<std::string> split(const std::string& str, char delimiter) {
     std::vector<std::string> tokens;
     std::stringstream strstream(str);
@@ -271,7 +279,8 @@ std::vector<sys::ClientConnectionData> sys::SocketServer::getClients() {
         clConList.push_back(client);
     }
 
-    HistoryClient = listClient;
+    for (auto& lc : listClient)
+        HistoryClient.push_back(lc);
 
     return clConList;
 }
@@ -470,11 +479,36 @@ uint64_t sys::SocketServer::sendAll(const void *message, uint32_t size) {
 
 void sys::SocketServer::keepAliveCID() {
     std::vector<char> keep_alive_byte;
+    std::string       keep_alive_read;
 
     keep_alive_byte.push_back(KEEP_ALIVE_PING);
 
     for (auto& clList : listClient) {
-        clList.sendClientData(keep_alive_byte);
+        bool keepAliveAccept = false;
+
+        std::thread([&]() -> void {
+            clList.sendClientData(keep_alive_byte);
+
+            std::thread([&]() -> void {
+                sleep(5);
+
+                if (keepAliveAccept == false)
+                    this->removeClient(clList.getCID().data());
+            }).detach();
+
+            if (!clList.readClientData(&keep_alive_read))
+                this->removeClient(clList.getCID().data());
+
+            else {
+                char keep = KEEP_ALIVE_PING;
+
+                if (keep_alive_read.at(keep_alive_read.size() - 1) != keep)
+                    keepAliveAccept = false;
+
+                else
+                    keepAliveAccept = true;
+            }
+        }).detach();
     }
 }
 
@@ -776,6 +810,22 @@ bool sys::SocketServer::Client::updateClient(const void *path, uint32_t path_siz
     file.close();
 
     return true;
+}
+
+void sys::SocketServer::removeClient(const std::string& CID) {
+    for (uint32_t i = 0; i < listClient.size(); i++)
+        if (listClient.at(i).getCID().data() == CID) {
+            listClient.at(i).disconnectClient();
+
+            sys::remove(listClient, i);
+        }
+}
+
+void sys::SocketServer::removeAll() {
+    for (auto& clList : listClient)
+        clList.disconnectClient();
+
+    listClient.clear();
 }
 
 uint64_t sys::SocketServer::sizeListBot() {

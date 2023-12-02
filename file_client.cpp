@@ -151,12 +151,22 @@ int main(int argc, char **argv) {
             }
 
             if (keep_alive) {
-                std::cout << "client alive" << std::endl;
+                std::cout << "[ INFO ]Client alive" << std::endl;
+
+                std::string keep_alive_buffer;
+
+                keep_alive_buffer.push_back(KEEP_ALIVE_PING);
+
+                if (!::send(imx8mm_socket, keep_alive_buffer.c_str(), keep_alive_buffer.size(), 0))
+                    std::cout << "[FAILED]Server closed" << std::endl;
 
                 keep_alive = false;
+
+                imx8mm_comm_buffer.clear();
+                imx8mm_comm_buffer.resize(1024);
             }
 
-            if (update_mode_byte) {
+            else if (update_mode_byte) {
                 std::vector<std::string> splitData = split(imx8mm_comm_buffer.data(), update_mode);
 
                 std::string path = splitData.at(0);
