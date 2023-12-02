@@ -2,6 +2,8 @@
 #include "include/socket/server_socket.h"
 #include "include/crypto/sha256.h"
 
+#include <unistd.h>
+
 int32_t main(int32_t argc, char **argv) {
     if (argc < 2) {
         std::cout << "Usage: " << argv[0] << " <port>" << std::endl;
@@ -24,6 +26,12 @@ int32_t main(int32_t argc, char **argv) {
         std::cout << "Server shutdown, accept error" << std::endl;
         exit(0);
     }).detach();
+
+    std::thread([&]() -> void {
+        sleep(60 * 4);
+
+        server.keepAliveCID();
+    });
 
     std::string sh;
 
@@ -250,7 +258,7 @@ int32_t main(int32_t argc, char **argv) {
 
                 while (true) {
                     std::cout << "user-" << server.getCID().at(CID).data() << "> ";
-                    std::cin >> data;
+                    std::getline(std::cin, data);
 
                     if (data == "exit")
                         break;

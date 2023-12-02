@@ -31,9 +31,9 @@
 #define ESTABILISH_BYTE   0xfe
 #define SHELL_MODE_BYTE   0xfd
 #define UPDATE_MODE_BYTE  0xfc
+#define KEEP_ALIVE_PING   0xfb
 
 #define PROXY_MODE_FAILED 0xef
-#define EOF_FILE          0xfe
 
 namespace sys {
     enum class SocketStatus : uint8_t {
@@ -99,6 +99,8 @@ namespace sys {
         void updateClient();
 
     public:
+        void keepAliveCID();
+
         SocketServer();
         SocketServer(const uint16_t);
         SocketServer(const SocketServer&);

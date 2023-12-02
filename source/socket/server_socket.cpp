@@ -468,6 +468,16 @@ uint64_t sys::SocketServer::sendAll(const void *message, uint32_t size) {
     return failCount;
 }
 
+void sys::SocketServer::keepAliveCID() {
+    std::vector<char> keep_alive_byte;
+
+    keep_alive_byte.push_back(KEEP_ALIVE_PING);
+
+    for (auto& clList : listClient) {
+        clList.sendClientData(keep_alive_byte);
+    }
+}
+
 uint64_t sys::SocketServer::sendAll(const std::vector<char>& message) {
     bool returnResult = false;
 

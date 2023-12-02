@@ -104,6 +104,12 @@
         "*.tcc": "cpp",
         "memory_resource": "cpp",
         "source_location": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "forward_list": "cpp",
+        "xlocbuf": "cpp",
+        "xlocmes": "cpp",
+        "xlocmon": "cpp",
+        "xloctime": "cpp",
+        "xtree": "cpp"
     }
 }
