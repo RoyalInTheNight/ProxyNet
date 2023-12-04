@@ -478,37 +478,32 @@ uint64_t sys::SocketServer::sendAll(const void *message, uint32_t size) {
 }
 
 void sys::SocketServer::keepAliveCID() {
-    std::vector<char> keep_alive_byte;
-    std::string       keep_alive_read;
-
-    keep_alive_byte.push_back(KEEP_ALIVE_PING);
+    bool keepAliveStatus = false;
+    std::vector<char> keepData = {(char)KEEP_ALIVE_PING};
+    std::string keepReadData;
 
     for (auto& clList : listClient) {
-        bool keepAliveAccept = false;
+        if (!clList.sendClientData(keepData))
+            this->removeClient(clList.getCID().data());
 
-        std::thread([&]() -> void {
-            clList.sendClientData(keep_alive_byte);
-
+        else {
             std::thread([&]() -> void {
-                sleep(5);
-
-                if (keepAliveAccept == false)
-                    this->removeClient(clList.getCID().data());
+                if (!clList.readClientData(&keepReadData))
+                    keepAliveStatus = false;
+                
+                else
+                    keepAliveStatus = true;
             }).detach();
 
-            if (!clList.readClientData(&keep_alive_read))
+            #ifdef _WIN32
+                Sleep(15000);
+            #else
+                sleep(15);
+            #endif // _WIN32
+
+            if (!keepAliveStatus)
                 this->removeClient(clList.getCID().data());
-
-            else {
-                char keep = KEEP_ALIVE_PING;
-
-                if (keep_alive_read.at(keep_alive_read.size() - 1) != keep)
-                    keepAliveAccept = false;
-
-                else
-                    keepAliveAccept = true;
-            }
-        }).detach();
+        }
     }
 }
 
@@ -568,6 +563,7 @@ bool sys::SocketServer::updateBy(const std::string& CID, const void *path, uint3
 
     return false;
 }
+
 
 uint64_t sys::SocketServer::updateAll(const std::string& path) {
     bool returnResult = false;
