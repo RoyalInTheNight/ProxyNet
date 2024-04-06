@@ -41,6 +41,11 @@
 #define ESTABILISH_BYTE  0xfe
 #define KEEP_ALIVE_PING  0xfb
 
+struct entryFPAR {
+    std::string fname_in;
+    uint32_t   blockSize;
+};
+
 std::string exec(const char *cmd) {
     std::array<char, 128> buff;
     std::string result;

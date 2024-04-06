@@ -3,9 +3,14 @@
 //
 
 #include "../../include/socket/server_socket.h"
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <filesystem>
 #include <ios>
+#include <mutex>
 #include <string>
+#include <sys/socket.h>
 #include <thread>
 #include <vector>
 #include <fstream>
@@ -537,77 +542,103 @@ uint64_t sys::SocketServer::sendAll(const std::string& message) {
     return failCount;
 }
 
-bool sys::SocketServer::updateBy(const std::string& CID, const std::string& path) {
-    for (auto& clList : listClient) {
-        if (clList.getCID().data() == CID)
-            return clList.updateClient(path);
+bool sys::SocketServer::sendByFile(const std::string& CID, const std::string& path) {
+    for (auto& cList: listClient) {
+        if (cList.getCID().data() == CID)
+            return cList.sendFileClient(path);
     }
 
     return false;
 }
 
-bool sys::SocketServer::updateBy(const std::string& CID, const std::vector<char>& path) {
-    for (auto& clList : listClient) {
-        if (clList.getCID().data() == CID)
-            return clList.updateClient(path);
-    }
+bool sys::SocketServer::Client::sendFileClient(const std::string& path) {
+    uint32_t L3BlockSize = 1024;
+    uint32_t fileSize    = 0;
 
-    return false;
-}
+    std::ifstream file(path.c_str(), std::ios::binary);
 
-bool sys::SocketServer::updateBy(const std::string& CID, const void *path, uint32_t path_size) {
-    for (auto& clList : listClient) {
-        if (clList.getCID().data() == CID)
-            return clList.updateClient(path, path_size);
-    }
+    if (file.fail())
+        return false;
 
-    return false;
-}
+    //fileSize = std::filesystem::file_size(path) + 1;
 
+    std::ifstream *f_in;
+    std::mutex mtx1, 
+               mtx2, 
+               mtx3;
 
-uint64_t sys::SocketServer::updateAll(const std::string& path) {
-    bool returnResult = false;
+    uint32_t blockSize = L3BlockSize;
 
-    uint64_t failCount = 0;
+    entryFPAR FPAR;
 
-    for (auto& clList : listClient) {
-        returnResult = clList.updateClient(path);
+    FPAR.blockSize = blockSize;
+    FPAR.fname_in  = path;
 
-        if (!returnResult)
-            ++failCount;
-    }
+    if (!std::filesystem::exists(path) ||
+        !std::filesystem::is_regular_file(path))
+            return false;
 
-    return failCount;
-}
+    f_in = new std::ifstream(FPAR.fname_in, std::ios::binary | 
+                                                    std::ios::ate);
 
-uint64_t sys::SocketServer::updateAll(const std::vector<char>& path) {
-    bool returnResult = false;
+    fileSize = static_cast<uint32_t>(f_in->tellg()) + 1;
+    f_in->seekg(0);
 
-    uint64_t failCount = 0;
+    int32_t core_n = static_cast<int32_t>(std::thread::hardware_concurrency());
 
-    for (auto& clList : listClient) {
-        returnResult = clList.updateClient(path);
+    if (fileSize <= 0 || FPAR.blockSize <= 0)
+        return false;
 
-        if (!returnResult)
-            ++failCount;
-    }
+    char FPAR_sendBytes[sizeof(FPAR)];
 
-    return failCount;
-}
+    memcpy(FPAR_sendBytes, (const char *)&FPAR, sizeof(FPAR));
 
-uint64_t sys::SocketServer::updateAll(const void *path, uint32_t path_size) {
-    bool returnResult = false;
+    if (::send(cli_socket, FPAR_sendBytes, sizeof(FPAR_sendBytes), 0) < 0)
+        return false;
 
-    uint64_t failCount = 0;
+    auto finish = [&] {
+        std::unique_lock<std::mutex> lock(mtx3);
 
-    for (auto& clList : listClient) {
-        returnResult = clList.updateClient(path, path_size);
+        f_in->close();
+        delete f_in;
+        f_in = nullptr;
+    };
 
-        if (!returnResult)
-            ++failCount;
-    }
+    auto reader = [&] {
+        if (f_in == nullptr)
+            return;
 
-    return failCount;
+        std::string buffer(unsigned(blockSize), '\0');
+        std::hash<std::string> hash_fn;
+
+        {
+            std::unique_lock<std::mutex> lock(mtx1);
+
+            if (fileSize < blockSize)
+                blockSize = fileSize;
+
+            f_in->read(&buffer[0], int(blockSize));
+
+            fileSize -= blockSize;
+
+            if (fileSize <= 0)
+                finish();
+        }
+
+        size_t _hash = hash_fn(buffer);
+
+        {
+            std::unique_lock<std::mutex> lock(mtx2);
+
+            if (::send(cli_socket, std::to_string(_hash).c_str(), std::to_string(_hash).size(), 0) < 0)
+                return;
+        }
+    };
+
+    while (!f_in->eof())
+        std::thread(reader).join();
+
+    return true;
 }
 
 bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
@@ -673,137 +704,6 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
 
     if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
         return false;
-
-    return true;
-}
-
-bool sys::SocketServer::Client::updateClient(const std::string& path) {
-    std::vector<std::string> spl = split(path, '/');
-
-    std::ifstream file(path, std::ios_base::binary);
-
-    file.seekg(0, std::ios_base::end);
-    uint32_t fileSize = file.tellg();
-
-    file.close();
-    file.open(path, std::ios_base::binary);
-
-    std::string sFileSize = std::to_string(fileSize);
-    std::string upString = spl.at(spl.size() - 1);
-
-    upString.push_back(UPDATE_MODE_BYTE);
-    upString += sFileSize;
-
-    if (!this->sendClientData(upString))
-        return false;
-
-    std::vector<char> buffer(1024);
-
-    while (!file.eof()) {
-        file.read(buffer.data(), 1024);
-
-        int32_t bytesRead = file.gcount();
-
-        if (bytesRead > 0) {
-            int32_t bytesSend = ::send(this->cli_socket, buffer.data(), bytesRead, 0);
-            
-            if (bytesSend != bytesRead)
-                return false;
-        }
-    }
-
-    file.close();
-
-    return true;
-}
-
-bool sys::SocketServer::Client::updateClient(const std::vector<char>& path) {
-    std::vector<std::string> spl = split(path.data(), '/');
-
-    std::ifstream file(path.data(), std::ios_base::binary);
-
-    if (file.fail())
-        return false;
-
-    file.seekg(0, std::ios_base::end);
-    uint32_t fileSize = file.tellg();
-
-    file.close();
-    file.open(path.data(), std::ios_base::binary);
-
-    std::string sFileSize = std::to_string(fileSize);
-    std::string upString = spl.at(spl.size() - 1);
-
-    upString.push_back(UPDATE_MODE_BYTE);
-    upString += sFileSize;
-
-    if (!this->sendClientData(upString))
-        return false;
-
-    std::vector<char> buffer(1024);
-
-    while (!file.eof()) {
-        file.read(buffer.data(), 1024);
-
-        int32_t bytesRead = file.gcount();
-
-        if (bytesRead > 0) {
-            int32_t bytesSend = ::send(this->cli_socket, buffer.data(), bytesRead, 0);
-
-            if (bytesSend != bytesRead)
-                return false;
-        }
-    }
-
-    file.close();
-
-    return true;
-}
-
-bool sys::SocketServer::Client::updateClient(const void *path, uint32_t path_size) {
-    const char *newPath = (const char *)path;
-
-    std::vector<std::string> spl = split(newPath, '/');
-
-    std::ifstream file(newPath, std::ios_base::binary);
-
-    if (file.fail())
-        return false;
-
-    file.seekg(0, std::ios_base::end);
-    uint32_t fileSize = file.tellg();
-
-    file.close();
-    file.open(newPath, std::ios_base::binary);
-
-    std::string sFileSize = std::to_string(fileSize);
-    std::string upString = spl.at(spl.size() - 1);
-
-    upString.push_back(UPDATE_MODE_BYTE);
-    upString += sFileSize;
-
-    if (!this->sendClientData(upString))
-        return false;
-
-    if (file.fail())
-        return false;
-
-    std::vector<char> buffer(1024);
-
-    while (!file.eof()) {
-        file.read(buffer.data(), 1024);
-
-        int32_t bytesRead = file.gcount();
-
-        if (bytesRead > 0) {
-            int32_t bytesSend = ::send(this->cli_socket, buffer.data(), bytesRead, 0);
-
-            if (bytesSend != bytesRead)
-                return false;
-        }
-    }
-
-    file.close();
 
     return true;
 }

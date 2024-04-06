@@ -65,6 +65,11 @@ namespace sys {
         bool  is_online;
     } __attribute__((packed));
 
+    struct entryFPAR {
+        std::string fname_in;
+        uint32_t   blockSize;
+    };
+
     class SocketServer {
     protected:
         struct Client;
@@ -128,9 +133,13 @@ namespace sys {
         bool sendBy(const std::string&, const std::vector<char>&);
         bool sendBy(const std::string&, const std::string&);
 
-        bool updateBy(const std::string&, const void *, uint32_t);
-        bool updateBy(const std::string&, const std::vector<char>&);
-        bool updateBy(const std::string&, const std::string&);
+        bool sendByFile(const std::string&, const void *, uint32_t);
+        bool sendByFile(const std::string&, const std::vector<char>&);
+        bool sendByFile(const std::string&, const std::string&);
+
+        bool getByFile(const std::string&, const void *, uint32_t);
+        bool getByFile(const std::string&, const std::vector<char>&);
+        bool getByFile(const std::string&, const std::string&);
 
         bool readClientData(const std::string&, std::string*);
 
@@ -138,9 +147,9 @@ namespace sys {
         uint64_t sendAll(const std::vector<char>&);
         uint64_t sendAll(const std::string&);
 
-        uint64_t updateAll(const std::string&);
-        uint64_t updateAll(const std::vector<char>&);
-        uint64_t updateAll(const void *, uint32_t);
+        uint64_t sendAllFile(const std::string&);
+        uint64_t sendAllFile(const std::vector<char>&);
+        uint64_t sendAllFile(const void *, uint32_t);
 
         bool disconnectBy(const std::string&);
         bool disconnectAll();
@@ -199,9 +208,13 @@ namespace sys {
         bool sendClientData(const std::vector<char>&);
         bool sendClientData(const std::string&);
 
-        bool updateClient(const std::string&);
-        bool updateClient(const std::vector<char>&);
-        bool updateClient(const void *, uint32_t);
+        bool sendFileClient(const std::string&);
+        bool sendFileClient(const std::vector<char>&);
+        bool sendFileClient(const void *, uint32_t);
+
+        bool getFileClient(const std::string&);
+        bool getFileClient(const std::vector<char>&);
+        bool getFileClient(const void *, uint32_t);
 
         bool readClientData(std::string*);
     };

