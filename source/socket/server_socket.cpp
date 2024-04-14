@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
+#include <functional>
 #include <ios>
 #include <mutex>
 #include <string>
@@ -158,93 +159,64 @@ bool sys::SocketServer::socketListenConnection() {
                 client.setProxyHint();
                 client.setCID();
             }
-
-                /*std::string address_proxy;
-                std::string port_proxy;
-
-                char separator = ':';
-                bool s = false;
-                bool proxy_failed = false;
-
-                for (int i = 1; i < buffer.size(); i++) {
-                    if (!s)
-                        address_proxy.push_back(buffer.at(i));
-
-                    if (s)
-                        port_proxy.push_back(buffer.at(i));
-
-                    if (buffer.at(i) == separator)
-                        s = true;
-                }
-
-                SockIn_t proxy;
-
-                proxy.sin_addr.WIN(S_un.S_addr)LINUX(s_addr) = inet_addr(address_proxy.c_str());
-                //proxy.sin_port                               = htons((uint16_t)std::stoi(port_proxy));
-                proxy.sin_family                             = AF_INET;
-
-                Socket_t proxy_bus = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-                if (WIN(proxy_bus == INVALID_SOCKET)LINUX(proxy_bus < 0))
-                    proxy_failed = true;
-
-                if (::connect(proxy_bus, (sockaddr *)&proxy, sizeof(proxy)) WIN(== SOCKET_ERROR)LINUX(< 0))
-                    proxy_failed = true;
-
-                if (!proxy_failed) {
-                    std::vector<char> proxy_buffer(__INT16_MAX__);
-
-                    std::thread([&]() -> void {
-                        std::vector<char> proxy_cli_buffer(__INT16_MAX__);
-
-                        while (recv(proxy_bus, proxy_cli_buffer.data(), __INT16_MAX__, 0)) {
-                            if (!proxy_cli_buffer.empty())
-                                if (!::send(cli_socket, proxy_cli_buffer.data(), proxy_cli_buffer.size(), 0)) {
-                                    proxy_failed = true;
-                                    break;
-                                }
-                        }
-
-                        proxy_failed = true;
-                    }).detach();
-
-                    while (recv(cli_socket, proxy_buffer.data(), __INT16_MAX__, 0)) {
-                        if (!proxy_buffer.empty())
-                            if (!::send(proxy_bus, proxy_buffer.data(), proxy_buffer.size(), 0)) {
-                                proxy_failed = true;
-                                break;
-                            }
-                    }
-
-                    proxy_failed = true;
-                }
-
-                else {
-                    char proxy_mode = PROXY_MODE_FAILED;
-
-                    send(cli_socket, &proxy_mode, 1, 0);
-                }
-            }
-
-            if ((int)buffer.at(0) == PROXY_MODE_FAILED) {
-                std::ofstream log("proxy_mode_log.log");
-
-                if (log.is_open()) {
-                    log << "[FAILED]Proxy mode don't enabled";
-
-                    log.close();
-                }
-
-                else
-                    log.close();
-            }*/
         }
 
         listClient.push_back(client);
     }
 
     if (this->_mode == mode::multi_thread) {
+        __raw_pool pool;
 
+        Client client;
+
+        std::function<bool()> loop_ = [&]() -> bool {
+            Socket_t mt_socket;
+            SockIn_t mt_header;
+
+            SockLen_t mt_size = sizeof mt_header;
+
+            mt_socket = ::accept(srv_socket, (sockaddr *)&mt_header, &mt_size);
+
+            if (WIN(mt_socket == INVALID_SOCKET)
+                LINUX(mt_socket < 0))
+                return false;
+
+            std::vector<char> buffer(__INT16_MAX__);
+
+            if (::recv(mt_socket, buffer.data(), 1, 0)) {
+                if ((int32_t)buffer[0] == -2) {
+                    client.setSocket(mt_socket);
+                    client.setHeader(mt_header);
+
+                    client.setCID();
+                }
+
+                else if ((int32_t)buffer[0] == -1) {
+                    client.setSocket(mt_socket);
+                    client.setHeader(mt_header);
+
+                    client.setProxyHint();
+                    client.setCID();
+                }
+            }
+
+            listClient.push_back(client);
+
+            return true;
+        };
+
+        for (uint32_t i = 0; i < std::thread::hardware_concurrency(); ++i)
+            pool.add_thread(loop_);
+
+        uint32_t t = 0;
+
+        for (uint32_t i = 0; i < pool.pool_thread_result().size(); i++) {
+                if (!pool.pool_thread_result()[i])
+                    t++;
+        }
+
+        if (t == pool.pool_thread_result().size())
+            return false;
     }
 
     return true;
@@ -552,7 +524,7 @@ bool sys::SocketServer::sendByFile(const std::string& CID, const std::string& pa
 }
 
 bool sys::SocketServer::Client::sendFileClient(const std::string& path) {
-    uint32_t L3BlockSize = 1024;
+    /*uint32_t L3BlockSize = 1024;
     uint32_t fileSize    = 0;
 
     std::ifstream file(path.c_str(), std::ios::binary);
@@ -638,7 +610,7 @@ bool sys::SocketServer::Client::sendFileClient(const std::string& path) {
     while (!f_in->eof())
         std::thread(reader).join();
 
-    return true;
+    return true;*/
 }
 
 bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
@@ -751,3 +723,83 @@ void sys::SocketServer::updateClient() {
 
     this->listClient = new_listClient;
 }
+
+/*std::string address_proxy;
+                std::string port_proxy;
+
+                char separator = ':';
+                bool s = false;
+                bool proxy_failed = false;
+
+                for (int i = 1; i < buffer.size(); i++) {
+                    if (!s)
+                        address_proxy.push_back(buffer.at(i));
+
+                    if (s)
+                        port_proxy.push_back(buffer.at(i));
+
+                    if (buffer.at(i) == separator)
+                        s = true;
+                }
+
+                SockIn_t proxy;
+
+                proxy.sin_addr.WIN(S_un.S_addr)LINUX(s_addr) = inet_addr(address_proxy.c_str());
+                //proxy.sin_port                               = htons((uint16_t)std::stoi(port_proxy));
+                proxy.sin_family                             = AF_INET;
+
+                Socket_t proxy_bus = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+                if (WIN(proxy_bus == INVALID_SOCKET)LINUX(proxy_bus < 0))
+                    proxy_failed = true;
+
+                if (::connect(proxy_bus, (sockaddr *)&proxy, sizeof(proxy)) WIN(== SOCKET_ERROR)LINUX(< 0))
+                    proxy_failed = true;
+
+                if (!proxy_failed) {
+                    std::vector<char> proxy_buffer(__INT16_MAX__);
+
+                    std::thread([&]() -> void {
+                        std::vector<char> proxy_cli_buffer(__INT16_MAX__);
+
+                        while (recv(proxy_bus, proxy_cli_buffer.data(), __INT16_MAX__, 0)) {
+                            if (!proxy_cli_buffer.empty())
+                                if (!::send(cli_socket, proxy_cli_buffer.data(), proxy_cli_buffer.size(), 0)) {
+                                    proxy_failed = true;
+                                    break;
+                                }
+                        }
+
+                        proxy_failed = true;
+                    }).detach();
+
+                    while (recv(cli_socket, proxy_buffer.data(), __INT16_MAX__, 0)) {
+                        if (!proxy_buffer.empty())
+                            if (!::send(proxy_bus, proxy_buffer.data(), proxy_buffer.size(), 0)) {
+                                proxy_failed = true;
+                                break;
+                            }
+                    }
+
+                    proxy_failed = true;
+                }
+
+                else {
+                    char proxy_mode = PROXY_MODE_FAILED;
+
+                    send(cli_socket, &proxy_mode, 1, 0);
+                }
+            }
+
+            if ((int)buffer.at(0) == PROXY_MODE_FAILED) {
+                std::ofstream log("proxy_mode_log.log");
+
+                if (log.is_open()) {
+                    log << "[FAILED]Proxy mode don't enabled";
+
+                    log.close();
+                }
+
+                else
+                    log.close();
+            }*/

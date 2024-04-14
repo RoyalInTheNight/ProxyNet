@@ -25,6 +25,7 @@
 
 #include <functional>
 
+#include "../../include/thread_pool/pool.h"
 #include "../../include/crypto/sha256.h"
 
 #define PROXY_MESSAGE     0xff
@@ -78,6 +79,7 @@ namespace sys {
         typedef SocketType                     type;
         typedef ThreadMode                     mode;
         typedef std::function<void()> recvHandler_t;
+
 
         status _status;
         type     _type;
