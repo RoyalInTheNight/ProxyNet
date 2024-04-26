@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <functional>
 #include <ios>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <sys/socket.h>
@@ -129,6 +130,8 @@ bool sys::SocketServer::socketInit() {
 }
 
 bool sys::SocketServer::socketListenConnection() {
+    char cloud_hint = CLOUD_CLIENT_BYTE;
+
     if (this->_mode == mode::single_thread) {
         Socket_t cli_socket;
         SockIn_t cli_header;
@@ -158,6 +161,20 @@ bool sys::SocketServer::socketListenConnection() {
 
                 client.setProxyHint();
                 client.setCID();
+            }
+
+            else if ((int)buffer.at(0) == (int)cloud_hint) {
+                client.setSocket(cli_socket);
+                client.setHeader(cli_header);
+
+                client.setCloudHint();
+                client.setCID();
+            }
+
+            else {
+                close(cli_socket);
+
+                shutdown(cli_socket, SHUT_RDWR);
             }
         }
 
@@ -197,6 +214,20 @@ bool sys::SocketServer::socketListenConnection() {
 
                     client.setProxyHint();
                     client.setCID();
+                }
+
+                else if ((int)buffer.at(0) == (int)cloud_hint) {
+                    client.setSocket(mt_socket);
+                    client.setHeader(mt_header);
+
+                    client.setCloudHint();
+                    client.setCID();
+                }
+
+                else {
+                    close(mt_socket);
+
+                    shutdown(mt_socket, SHUT_RDWR);
                 }
             }
 
@@ -524,93 +555,29 @@ bool sys::SocketServer::sendByFile(const std::string& CID, const std::string& pa
 }
 
 bool sys::SocketServer::Client::sendFileClient(const std::string& path) {
-    /*uint32_t L3BlockSize = 1024;
-    uint32_t fileSize    = 0;
+    uint32_t  file_size = std::filesystem::file_size(path);
+    uint32_t block_size = 1024;
 
-    std::ifstream file(path.c_str(), std::ios::binary);
+    std::ifstream file(path, std::ios::binary);
 
-    if (file.fail())
-        return false;
-
-    //fileSize = std::filesystem::file_size(path) + 1;
-
-    std::ifstream *f_in;
-    std::mutex mtx1, 
-               mtx2, 
-               mtx3;
-
-    uint32_t blockSize = L3BlockSize;
-
-    entryFPAR FPAR;
-
-    FPAR.blockSize = blockSize;
-    FPAR.fname_in  = path;
-
-    if (!std::filesystem::exists(path) ||
-        !std::filesystem::is_regular_file(path))
-            return false;
-
-    f_in = new std::ifstream(FPAR.fname_in, std::ios::binary | 
-                                                    std::ios::ate);
-
-    fileSize = static_cast<uint32_t>(f_in->tellg()) + 1;
-    f_in->seekg(0);
-
-    int32_t core_n = static_cast<int32_t>(std::thread::hardware_concurrency());
-
-    if (fileSize <= 0 || FPAR.blockSize <= 0)
-        return false;
-
-    char FPAR_sendBytes[sizeof(FPAR)];
-
-    memcpy(FPAR_sendBytes, (const char *)&FPAR, sizeof(FPAR));
-
-    if (::send(cli_socket, FPAR_sendBytes, sizeof(FPAR_sendBytes), 0) < 0)
-        return false;
-
-    auto finish = [&] {
-        std::unique_lock<std::mutex> lock(mtx3);
-
-        f_in->close();
-        delete f_in;
-        f_in = nullptr;
+    auto reader = [&](const std::ifstream& f_bin) -> std::vector<char> {
+        
     };
+}
 
-    auto reader = [&] {
-        if (f_in == nullptr)
-            return;
+uint64_t sys::SocketServer::sendAllFile(const std::string& path) {
+    bool returnResult = false;
 
-        std::string buffer(unsigned(blockSize), '\0');
-        std::hash<std::string> hash_fn;
+    uint64_t failCount = 0;
 
-        {
-            std::unique_lock<std::mutex> lock(mtx1);
+    for (auto& clList: listClient) {
+        returnResult = clList.sendFileClient(path);
 
-            if (fileSize < blockSize)
-                blockSize = fileSize;
+        if (!returnResult)
+            ++failCount;
+    }
 
-            f_in->read(&buffer[0], int(blockSize));
-
-            fileSize -= blockSize;
-
-            if (fileSize <= 0)
-                finish();
-        }
-
-        size_t _hash = hash_fn(buffer);
-
-        {
-            std::unique_lock<std::mutex> lock(mtx2);
-
-            if (::send(cli_socket, std::to_string(_hash).c_str(), std::to_string(_hash).size(), 0) < 0)
-                return;
-        }
-    };
-
-    while (!f_in->eof())
-        std::thread(reader).join();
-
-    return true;*/
+    return failCount;
 }
 
 bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {

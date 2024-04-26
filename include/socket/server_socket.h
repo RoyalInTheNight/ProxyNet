@@ -33,7 +33,7 @@
 #define SHELL_MODE_BYTE   0xfd
 #define UPDATE_MODE_BYTE  0xfc
 #define KEEP_ALIVE_PING   0xfb
-
+#define CLOUD_CLIENT_BYTE 0xee
 #define PROXY_MODE_FAILED 0xef
 
 namespace sys {
@@ -178,6 +178,7 @@ namespace sys {
         std::vector<char> CID;
 
         bool proxy_hint = false;
+        bool cloud_hint = false;
         
     public:
         [[nodiscard]] std::vector<char>   getData() const { return this->cli_data;   }
@@ -192,6 +193,10 @@ namespace sys {
         void setHeader(const SockIn_t client) { this->cli_header = client; }
         void setProxyHint() {
             this->proxy_hint = true;
+        }
+
+        void setCloudHint() {
+            this->cloud_hint = true;
         }
 
         void setCID() {

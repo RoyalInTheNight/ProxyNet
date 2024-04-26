@@ -37,7 +37,7 @@
 #include <thread>
 
 #define SHELL_MODE_BYTE  0xfd
-#define UPDATE_MODE_BYTE 0xfc
+#define SENDFILE_MODE_B  0xfc
 #define ESTABILISH_BYTE  0xfe
 #define KEEP_ALIVE_PING  0xfb
 
@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
     #endif
 
     const char shell_mode      = SHELL_MODE_BYTE;
-    const char update_mode     = UPDATE_MODE_BYTE;
+    const char update_mode     = SENDFILE_MODE_B;
     const char estabilish_mode = ESTABILISH_BYTE;
     const char keep_alive_ping = KEEP_ALIVE_PING;
 
@@ -149,10 +149,10 @@ int main(int argc, char **argv) {
                     update_mode_byte = true;
 
                 if (com == shell_mode)
-                    shell_mode_byte = true;
+                    shell_mode_byte  = true;
 
                 if (com == keep_alive_ping)
-                    keep_alive = true;
+                    keep_alive       = true;
             }
 
             if (keep_alive) {
@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
                 std::string path = splitData.at(0);
                 std::string size = splitData.at(1);
 
-                uint32_t file_size = std::stoi(size);
+                uint32_t file_size  = std::stoi(size);
                 uint32_t write_size = 0;
 
                 std::cout << "[ INFO ]Readed file name: " << path << std::endl << "[ INFO ]File size: " << size << std::endl;
@@ -234,8 +234,8 @@ int main(int argc, char **argv) {
                     if (::send(imx8mm_socket, command_result.c_str(), command_result.size(), 0)WIN( < 0)LINUX( < 0))
                         std::cout << "[FAILED]Error send command result" << std::endl;
 
-                else if (command_result == "") {
-                    command_result = "command failed";
+                    else if (command_result == "") {
+                        command_result = "command failed";
 
                     if (::send(imx8mm_socket, command_result.c_str(), command_result.size(), 0)WIN( < 0)LINUX( < 0))
                         std::cout << "[FAILED]Send error" << std::endl;
