@@ -1,6 +1,8 @@
 #include "../../include/socket/client_socket.h"
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
+#include <vector>
 
 SocketClient::SocketClient(const std::string& address, const uint16_t port) {
     ClientTypes::ServerConnectionData server_connection;
@@ -88,3 +90,35 @@ void SocketClient::setThreadType(const tstatus_t& tstatus) {
     tstatus_ = tstatus;
 }
 
+ClientTypes::SocketStatus SocketClient::socketInit(const std::string& CID) {
+    for (auto& _: server)
+        if (_.CID == CID) {
+            _.socket_ = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+            if (_.socket_ < 0)
+                return sstatus_t::err_socket_init;
+
+            else break;
+        }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::socketConnect(const std::string& CID) {
+    for (auto& _: server)
+        if (_.CID == CID) {
+            if (_.socket_ < 0)
+                return sstatus_t::err_socket_init;
+
+            if (::connect(_.socket_, (sockaddr *)&_.header_, _.sosize_) < 0)
+                return sstatus_t::err_socket_connect;
+
+            std::vector<char> estabilish_connection = {(char)ESTABILISH_BYTE};
+
+            if (::send(_.socket_, estabilish_connection.data(), 
+                                  estabilish_connection.size(), 0) < 0)
+                                  return sstatus_t::err_socket_estabilish;
+        }
+
+    return sstatus_t::err_socket_ok;
+}

@@ -22,6 +22,14 @@
 #include "../../include/thread_pool/pool.h"
 #include "../../include/crypto/sha256.h"
 
+#define PROXY_MESSAGE     0xff
+#define ESTABILISH_BYTE   0xfe
+#define SHELL_MODE_BYTE   0xfd
+#define UPDATE_MODE_BYTE  0xfc
+#define KEEP_ALIVE_PING   0xfb
+#define CLOUD_CLIENT_BYTE 0xee
+#define PROXY_MODE_FAILED 0xef
+
 namespace ClientTypes {
     #ifdef _WIN32
         typedef SOCKET      socket_t;
@@ -34,12 +42,14 @@ namespace ClientTypes {
     #endif // _WIN32
 
     enum class SocketStatus : uint8_t {
-        err_socket_init    = 0x0,
-        err_socket_connect = 0x1,
-        err_socket_fsend   = 0x2,
-        err_socket_frecv   = 0x3,
-        err_socket_send    = 0x4,
-        err_socket_recv    = 0x5
+        err_socket_init       = 0x1,
+        err_socket_connect    = 0x2,
+        err_socket_fsend      = 0x3,
+        err_socket_frecv      = 0x4,
+        err_socket_send       = 0x5,
+        err_socket_recv       = 0x6,
+        err_socket_estabilish = 0x7,
+        err_socket_ok         = 0x0
     };
 
     enum class ThreadStatus : uint8_t {
