@@ -11,6 +11,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+#define WIN(exp)
+#define LINUX(exp) exp
 #endif // _WIN32
 
 #include <vector>
@@ -49,6 +52,8 @@ namespace ClientTypes {
         err_socket_send       = 0x5,
         err_socket_recv       = 0x6,
         err_socket_estabilish = 0x7,
+        err_socket_upload     = 0x8,
+        err_socket_upload_connection_broken = 0x9,
         err_socket_ok         = 0x0
     };
 
@@ -115,6 +120,8 @@ public:
     sstatus_t uploadAll(const std::string&);
     sstatus_t uploadAll(const std::vector<char>&);
     sstatus_t uploadAll(const void *, const uint32_t);
+
+    sstatus_t download(const std::string&);
 
     void removeServer(const std::string&);
     void removeClient();

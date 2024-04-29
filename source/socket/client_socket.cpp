@@ -1,5 +1,9 @@
 #include "../../include/socket/client_socket.h"
 #include <arpa/inet.h>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <functional>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <vector>
@@ -95,7 +99,8 @@ ClientTypes::SocketStatus SocketClient::socketInit(const std::string& CID) {
         if (_.CID == CID) {
             _.socket_ = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-            if (_.socket_ < 0)
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
                 return sstatus_t::err_socket_init;
 
             else break;
@@ -107,18 +112,302 @@ ClientTypes::SocketStatus SocketClient::socketInit(const std::string& CID) {
 ClientTypes::SocketStatus SocketClient::socketConnect(const std::string& CID) {
     for (auto& _: server)
         if (_.CID == CID) {
-            if (_.socket_ < 0)
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
                 return sstatus_t::err_socket_init;
 
-            if (::connect(_.socket_, (sockaddr *)&_.header_, _.sosize_) < 0)
+            int32_t c_result = ::connect(_.socket_, (sockaddr *)&_.header_, _.sosize_);
+
+            if (WIN(c_result == SOCKET_ERROR)
+                LINUX(c_result < 0))
                 return sstatus_t::err_socket_connect;
 
             std::vector<char> estabilish_connection = {(char)ESTABILISH_BYTE};
 
-            if (::send(_.socket_, estabilish_connection.data(), 
-                                  estabilish_connection.size(), 0) < 0)
-                                  return sstatus_t::err_socket_estabilish;
+            c_result = ::send(_.socket_, estabilish_connection.data(), 
+                                               estabilish_connection.size(), 0);
+            
+            if (c_result < 0)
+                return sstatus_t::err_socket_estabilish;
         }
 
     return sstatus_t::err_socket_ok;
 }
+
+ClientTypes::SocketStatus SocketClient::sendBy(const std::string& CID, const std::string& data) {
+    for (auto& _: server)
+        if (_.CID == CID) {
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
+                return sstatus_t::err_socket_init;
+
+            int32_t c_result = ::send(_.socket_, data.c_str(), data.size(), 0);
+
+            if (c_result < 0)
+                return sstatus_t::err_socket_send;
+        }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::sendBy(const std::string& CID, const std::vector<char>& data) {
+    for (auto& _: server)
+        if (_.CID == CID) {
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
+                return sstatus_t::err_socket_init;
+
+            int32_t c_result = ::send(_.socket_, data.data(), data.size(), 0);
+
+            if (c_result < 0)
+                return sstatus_t::err_socket_send;
+        }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::sendBy(const std::string& CID, const void *data, const uint32_t size) {
+    for (auto& _: server)
+        if (_.CID == CID) {
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
+                return sstatus_t::err_socket_init;
+
+            int32_t c_result = ::send(_.socket_, (char *)data, size, 0);
+
+            if (c_result < 0)
+                return sstatus_t::err_socket_send;
+        }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::sendAll(const std::string& data) {
+    {
+        __raw_pool pool(server.size());
+
+        for (auto& _: server) {
+            std::function<bool()> __pool = [&]() -> bool {
+                if (WIN(_.socket_ == INVALID_SOCKET)
+                    LINUX(_.socket_ < 0))
+                    return false;
+
+                int32_t c_result = ::send(_.socket_, data.c_str(), data.size(), 0);
+
+                if (c_result < 0)
+                    return false;
+
+                return true;
+            };
+
+            pool.add_thread(__pool);
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::sendAll(const std::vector<char>& data) {
+    {
+        __raw_pool pool(server.size());
+
+        for (auto& _: server) {
+            std::function<bool()> __pool = [&]() -> bool {
+                if (WIN(_.socket_ == INVALID_SOCKET)
+                    LINUX(_.socket_ < 0))
+                    return false;
+
+                int32_t c_result = ::send(_.socket_, data.data(), data.size(), 0);
+
+                if (c_result < 0)
+                    return false;
+
+                return true;
+            };
+
+            pool.add_thread(__pool);
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::sendAll(const void *data, const uint32_t size) {
+    {
+        __raw_pool pool(server.size());
+
+        for (auto& _: server) {
+            std::function<bool()> __pool = [&]() -> bool {
+                if (WIN(_.socket_ == INVALID_SOCKET)
+                    LINUX(_.socket_ < 0))
+                    return false;
+
+                int32_t c_result = ::send(_.socket_, (char *)data, size, 0);
+
+                if (c_result < 0)
+                    return false;
+
+                return true;
+            };
+
+            pool.add_thread(__pool);
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::uploadBy(const std::string& CID, const std::string& path) {
+    for (auto& _: server) {
+        if (_.CID == CID) {
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
+                return sstatus_t::err_socket_init;
+
+            if (!std::filesystem::exists(path) || 
+                !std::filesystem::is_regular_file(path))
+                return sstatus_t::err_socket_upload;
+
+            uint32_t block_size = __INT16_MAX__;
+            uint32_t file_size  = std::filesystem::file_size(path) + 1;
+
+            std::vector<char> fbuffer(block_size);
+
+            std::ifstream file(path, std::ios::binary);
+
+            int32_t _loss = 0;
+
+            while (file_size) { // single thread realise
+                if (file_size >= block_size) {
+                    file.read(fbuffer.data(), block_size);
+
+                    file_size -= block_size;
+                }
+
+                else {
+                    file.read(fbuffer.data(), (file_size - block_size));
+
+                    file_size = 0;
+                }
+
+                _loss = ::send(_.socket_, fbuffer.data(), fbuffer.size(), 0);
+
+                if (_loss < 0) {
+                    for (uint32_t i = 0;!_loss && !(i < 5); i++)
+                        _loss = ::send(_.socket_, fbuffer.data(), fbuffer.size(), 0);
+                
+                    if (_loss < 0)
+                        return sstatus_t::err_socket_upload_connection_broken;
+                }
+            }
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::uploadBy(const std::string& CID, const std::vector<char>& path) {
+    for (auto& _: server) {
+        if (_.CID == CID) {
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
+                return sstatus_t::err_socket_init;
+
+            if (!std::filesystem::exists(path.data()) || 
+                !std::filesystem::is_regular_file(path.data()))
+                return sstatus_t::err_socket_upload;
+
+            uint32_t block_size = __INT16_MAX__;
+            uint32_t file_size  = std::filesystem::file_size(path.data()) + 1;
+
+            std::vector<char> fbuffer(block_size);
+
+            std::ifstream file(path.data(), std::ios::binary);
+
+            int32_t _loss = 0;
+
+            while (file_size) { // single thread realise
+                if (file_size >= block_size) {
+                    file.read(fbuffer.data(), block_size);
+
+                    file_size -= block_size;
+                }
+
+                else {
+                    file.read(fbuffer.data(), (file_size - block_size));
+
+                    file_size = 0;
+                }
+
+                _loss = ::send(_.socket_, fbuffer.data(), fbuffer.size(), 0);
+
+                if (_loss < 0) {
+                    for (uint32_t i = 0;!_loss && !(i < 5); i++)
+                        _loss = ::send(_.socket_, fbuffer.data(), fbuffer.size(), 0);
+                
+                    if (_loss < 0)
+                        return sstatus_t::err_socket_upload_connection_broken;
+                }
+            }
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::uploadBy(const std::string& CID, const void *path, const uint32_t size) {
+    for (auto& _: server) {
+        if (_.CID == CID) {
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
+                return sstatus_t::err_socket_init;
+
+            char *__path = new char[size];
+
+            memcpy(__path, path, size);
+
+            if (!std::filesystem::exists(__path) || 
+                !std::filesystem::is_regular_file(__path))
+                return sstatus_t::err_socket_upload;
+
+            uint32_t block_size = __INT16_MAX__;
+            uint32_t file_size  = std::filesystem::file_size(__path) + 1;
+
+            std::vector<char> fbuffer(block_size);
+
+            std::ifstream file(__path, std::ios::binary);
+
+            int32_t _loss = 0;
+
+            while (file_size) { // single thread realise
+                if (file_size >= block_size) {
+                    file.read(fbuffer.data(), block_size);
+
+                    file_size -= block_size;
+                }
+
+                else {
+                    file.read(fbuffer.data(), (file_size - block_size));
+
+                    file_size = 0;
+                }
+
+                _loss = ::send(_.socket_, fbuffer.data(), fbuffer.size(), 0);
+
+                if (_loss < 0) {
+                    for (uint32_t i = 0;!_loss && !(i < 5); i++)
+                        _loss = ::send(_.socket_, fbuffer.data(), fbuffer.size(), 0);
+                
+                    if (_loss < 0)
+                        return sstatus_t::err_socket_upload_connection_broken;
+                }
+            }
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::uploadAll(const std::string&) {return sstatus_t::err_socket_ok;}
+ClientTypes::SocketStatus SocketClient::uploadAll(const std::vector<char>&) {return sstatus_t::err_socket_ok;}
+ClientTypes::SocketStatus SocketClient::uploadAll(const void *, const uint32_t) {return sstatus_t::err_socket_ok;}
