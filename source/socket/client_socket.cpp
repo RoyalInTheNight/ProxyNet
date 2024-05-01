@@ -6,6 +6,7 @@
 #include <functional>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <thread>
 #include <vector>
 
 SocketClient::SocketClient(const std::string& address, const uint16_t port) {
@@ -408,6 +409,219 @@ ClientTypes::SocketStatus SocketClient::uploadBy(const std::string& CID, const v
     return sstatus_t::err_socket_ok;
 }
 
-ClientTypes::SocketStatus SocketClient::uploadAll(const std::string&) {return sstatus_t::err_socket_ok;}
-ClientTypes::SocketStatus SocketClient::uploadAll(const std::vector<char>&) {return sstatus_t::err_socket_ok;}
-ClientTypes::SocketStatus SocketClient::uploadAll(const void *, const uint32_t) {return sstatus_t::err_socket_ok;}
+ClientTypes::SocketStatus SocketClient::uploadAll(const std::string& path) {
+    if (server.size() > std::thread::hardware_concurrency()) {
+        uint32_t server_size = server.size();
+        uint32_t server_cnt  = server_size / std::thread::hardware_concurrency();
+        uint32_t count_t = 0;
+
+        for (uint32_t i = 0; i < server_cnt; i++) {
+            if (server_size < std::thread::hardware_concurrency()) {
+                __raw_pool pool(server_size);
+
+                for (;count_t < server_size; count_t++) {
+                    std::function<bool()> fnc = [&]() -> bool {
+                        if (sstatus_t::err_socket_ok != this->uploadBy(server[count_t].CID, path))
+                            return false;
+
+                        return true;
+                    };
+
+                    pool.add_thread(fnc);
+                }
+
+                server_size = 0;
+            }
+
+            else {
+                __raw_pool pool;
+
+                for (;count_t < std::thread::hardware_concurrency(); count_t++) {
+                    std::function<bool()> fnc = [&]() -> bool {
+                        if (sstatus_t::err_socket_ok != this->uploadBy(server[count_t].CID, path))
+                            return false;
+
+                        return true;
+                    };
+
+                    pool.add_thread(fnc);
+                }
+
+                server_size -= std::thread::hardware_concurrency();
+            }
+        }
+    }
+
+    else {
+        __raw_pool pool(server.size());
+
+        for (auto& _: server) {
+            std::function<bool()> fnc = [&]{
+                if (sstatus_t::err_socket_ok != this->uploadBy(_.CID, path))
+                    return false;
+
+                return true;
+            };
+
+            pool.add_thread(fnc);
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::uploadAll(const std::vector<char>& path) {
+    if (server.size() > std::thread::hardware_concurrency()) {
+        uint32_t server_size = server.size();
+        uint32_t server_cnt  = server_size / std::thread::hardware_concurrency();
+        uint32_t count_t = 0;
+
+        for (uint32_t i = 0; i < server_cnt; i++) {
+            if (server_size < std::thread::hardware_concurrency()) {
+                __raw_pool pool(server_size);
+
+                for (;count_t < server_size; count_t++) {
+                    std::function<bool()> fnc = [&]() -> bool {
+                        if (sstatus_t::err_socket_ok != this->uploadBy(server[count_t].CID, path))
+                            return false;
+
+                        return true;
+                    };
+
+                    pool.add_thread(fnc);
+                }
+
+                server_size = 0;
+            }
+
+            else {
+                __raw_pool pool;
+
+                for (;count_t < std::thread::hardware_concurrency(); count_t++) {
+                    std::function<bool()> fnc = [&]() -> bool {
+                        if (sstatus_t::err_socket_ok != this->uploadBy(server[count_t].CID, path))
+                            return false;
+
+                        return true;
+                    };
+
+                    pool.add_thread(fnc);
+                }
+
+                server_size -= std::thread::hardware_concurrency();
+            }
+        }
+    }
+
+    else {
+        __raw_pool pool(server.size());
+
+        for (auto& _: server) {
+            std::function<bool()> fnc = [&]{
+                if (sstatus_t::err_socket_ok != this->uploadBy(_.CID, path))
+                    return false;
+
+                return true;
+            };
+
+            pool.add_thread(fnc);
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::uploadAll(const void *path, const uint32_t size) {
+    if (server.size() > std::thread::hardware_concurrency()) {
+        uint32_t server_size = server.size();
+        uint32_t server_cnt  = server_size / std::thread::hardware_concurrency();
+        uint32_t count_t = 0;
+
+        for (uint32_t i = 0; i < server_cnt; i++) {
+            if (server_size < std::thread::hardware_concurrency()) {
+                __raw_pool pool(server_size);
+
+                for (;count_t < server_size; count_t++) {
+                    std::function<bool()> fnc = [&]() -> bool {
+                        if (sstatus_t::err_socket_ok != this->uploadBy(server[count_t].CID, path, size))
+                            return false;
+
+                        return true;
+                    };
+
+                    pool.add_thread(fnc);
+                }
+
+                server_size = 0;
+            }
+
+            else {
+                __raw_pool pool;
+
+                for (;count_t < std::thread::hardware_concurrency(); count_t++) {
+                    std::function<bool()> fnc = [&]() -> bool {
+                        if (sstatus_t::err_socket_ok != this->uploadBy(server[count_t].CID, path, size))
+                            return false;
+
+                        return true;
+                    };
+
+                    pool.add_thread(fnc);
+                }
+
+                server_size -= std::thread::hardware_concurrency();
+            }
+        }
+    }
+
+    else {
+        __raw_pool pool(server.size());
+
+        for (auto& _: server) {
+            std::function<bool()> fnc = [&]{
+                if (sstatus_t::err_socket_ok != this->uploadBy(_.CID, path, size))
+                    return false;
+
+                return true;
+            };
+
+            pool.add_thread(fnc);
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}
+
+ClientTypes::SocketStatus SocketClient::recvHandler() {
+    if (server.size() > std::thread::hardware_concurrency()) {
+
+    }
+
+    else {
+        __raw_pool pool(server.size());
+
+        for (auto& _: server) {
+            std::vector<char> r_buffer(1);
+
+            std::function<bool()> fnc = [&]{
+                while (::recv(_.socket_, r_buffer.data(), 1, 0)) {
+                    if (r_buffer[0] == ClientTypes::chr_handler::upload_mode) {
+                        
+                    }
+
+                    if (r_buffer[0] == ClientTypes::chr_handler::shell_mode) {
+
+                    }
+
+                    if (r_buffer[0] == ClientTypes::chr_handler::ping_mode) {
+
+                    }
+                }
+
+                return true;
+            };
+        }
+    }
+
+    return sstatus_t::err_socket_ok;
+}

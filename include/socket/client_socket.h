@@ -71,6 +71,18 @@ namespace ClientTypes {
         std::string address;
         uint16_t       port;
     };
+
+    namespace bit_handler {
+        static bool upload_mode;
+        static bool  shell_mode;
+        static bool   ping_mode;
+    }
+
+    namespace chr_handler {
+        const char shell_mode  =  SHELL_MODE_BYTE;
+        const char upload_mode = UPDATE_MODE_BYTE;
+        const char ping_mode   =  KEEP_ALIVE_PING;
+    }
 }
 
 class SocketClient {
@@ -120,8 +132,6 @@ public:
     sstatus_t uploadAll(const std::string&);
     sstatus_t uploadAll(const std::vector<char>&);
     sstatus_t uploadAll(const void *, const uint32_t);
-
-    sstatus_t download(const std::string&);
 
     void removeServer(const std::string&);
     void removeClient();
