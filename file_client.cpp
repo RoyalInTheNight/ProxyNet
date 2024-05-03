@@ -230,15 +230,12 @@ int main(int argc, char **argv) {
 
                 std::string command_result = exec(execlp.c_str());
 
-                if (command_result != "")
+                if (command_result != "") {
                     if (::send(imx8mm_socket, command_result.c_str(), command_result.size(), 0)WIN( < 0)LINUX( < 0))
                         std::cout << "[FAILED]Error send command result" << std::endl;
 
                     else if (command_result == "") {
                         command_result = "command failed";
-
-                    if (::send(imx8mm_socket, command_result.c_str(), command_result.size(), 0)WIN( < 0)LINUX( < 0))
-                        std::cout << "[FAILED]Send error" << std::endl;
                 }
 
                 command_result.clear();

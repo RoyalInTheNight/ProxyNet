@@ -95,19 +95,19 @@ private:
 
     std::vector<ClientTypes::ServerConnectionData> server;
 
-    sstatus_t recvHandler();
-
 public:
     SocketClient(const std::string&, const uint16_t);
     SocketClient(const SocketClient&);
     SocketClient();
 
-    [[nodiscard]] ClientTypes::socket_t getClientSocket(const std::string&)  const;
-    [[nodiscard]] ClientTypes::header_t getClientHeader(const std::string&)  const;
-    [[nodiscard]] std::string           getServerAddress(const std::string&) const;
-    [[nodiscard]] uint16_t              getServerPort(const std::string&)    const;
-    [[nodiscard]] sstatus_t             getClientSocketStatus()              const;
-    [[nodiscard]] tstatus_t             getClientThreadStatus()              const;
+    [[nodiscard]] ClientTypes::socket_t getClientSocket(const std::string&)   const;
+    [[nodiscard]] ClientTypes::header_t getClientHeader(const std::string&)   const;
+    [[nodiscard]] std::string           getServerAddress(const std::string&)  const;
+    [[nodiscard]] uint16_t              getServerPort(const std::string&)     const;
+    [[nodiscard]] sstatus_t             getClientSocketStatus()               const;
+    [[nodiscard]] tstatus_t             getClientThreadStatus()               const;
+    [[nodiscard]] std::vector<ClientTypes::ServerConnectionData> 
+                                        getServerConnectionData()             const {return server;}
 
     void setConnectionData(const std::string&, const uint16_t);
     void setConnectionData(const ClientTypes::ServerConnectionData&);
@@ -133,6 +133,8 @@ public:
     sstatus_t uploadAll(const std::vector<char>&);
     sstatus_t uploadAll(const void *, const uint32_t);
 
+    sstatus_t recvHandler();
+
     void removeServer(const std::string&);
     void removeClient();
 
@@ -141,7 +143,7 @@ public:
     uint32_t serverActivity();
     uint32_t serverList();
 
-    ~SocketClient();
+    //~SocketClient();
 };
 
 #endif // __CLIENT_SOCKET

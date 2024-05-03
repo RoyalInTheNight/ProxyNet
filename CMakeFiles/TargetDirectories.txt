@@ -1,6 +1,0 @@
-/home/work/empire/ProxyNet/CMakeFiles/socket.dir
-/home/work/empire/ProxyNet/CMakeFiles/sha256.dir
-/home/work/empire/ProxyNet/CMakeFiles/server.dir
-/home/work/empire/ProxyNet/CMakeFiles/ProxyNet.dir
-/home/work/empire/ProxyNet/CMakeFiles/edit_cache.dir
-/home/work/empire/ProxyNet/CMakeFiles/rebuild_cache.dir

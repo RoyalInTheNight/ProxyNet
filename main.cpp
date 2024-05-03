@@ -3,6 +3,7 @@
 #include "include/crypto/sha256.h"
 
 #include <unistd.h>
+#include <vector>
 
 int32_t main(int32_t argc, char **argv) {
     if (argc < 2) {
@@ -199,11 +200,11 @@ int32_t main(int32_t argc, char **argv) {
                 std::cout << "filename> ";
                 std::cin >> data;
 
-                if (!server.updateBy(server.getCID().at(CID), data))
-                    std::cout << "Send error" << std::endl;
+                //if (!server.updateBy(server.getCID().at(CID), data))
+                //    std::cout << "Send error" << std::endl;
 
-                else
-                    std::cout << "Message delivered" << std::endl;
+                //else
+                //    std::cout << "Message delivered" << std::endl;
             }
         }
 
@@ -224,9 +225,9 @@ int32_t main(int32_t argc, char **argv) {
             std::cout << "filename> ";
             std::cin >> data;
 
-            uint32_t failed = server.updateAll(data);
+            //uint32_t failed = server.updateAll(data);
 
-            std::cout << "Message delivered" << "\n\tFails: " << failed << std::endl;
+            //std::cout << "Message delivered" << "\n\tFails: " << failed << std::endl;
         }
 
         if (sh == "shell") {
@@ -255,9 +256,9 @@ int32_t main(int32_t argc, char **argv) {
 
                     std::cin.clear();
 
-                    std::getline(std::cin, shell);
+                    std::getline(std::cin, data);
                     
-                    if (shell.size()) {
+                    if (data.size()) {
                         if (data == "exit")
                             break;
 

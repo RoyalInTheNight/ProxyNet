@@ -1,2 +1,0 @@
-/usr/bin/ar qc libsha256.a CMakeFiles/sha256.dir/source/crypto/sha256.cpp.o
-/usr/bin/ranlib libsha256.a
