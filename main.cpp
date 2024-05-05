@@ -252,7 +252,11 @@ int32_t main(int32_t argc, char **argv) {
                 std::string shell;
 
                 while (true) {
-                    std::cout << "user-" << server.getCID().at(CID).data() << "> ";
+                    if (server.getCID().size() > CID)
+                        std::cout << "user-" << server.getCID().at(CID).data() << "> ";
+
+                    else
+                        break;
 
                     std::cin.clear();
 
@@ -265,16 +269,28 @@ int32_t main(int32_t argc, char **argv) {
                         shell.push_back(SHELL_MODE_BYTE);
                         shell += data;
 
-                        if (!server.sendBy(server.getCID().at(CID), shell))
-                            std::cout << "Send error" << std::endl;
+                        //std::cout << shell << std::endl;
+
+                        if (server.getCID().size() > CID) {
+                            if (!server.sendBy(server.getCID().at(CID), shell))
+                                std::cout << "Send error" << std::endl;
+
+                            else
+                                std::cout << "Command sended" << std::endl;
+                        }
 
                         else
-                            std::cout << "Command sended" << std::endl;
+                            break;
 
                         std::string shell_read;
 
-                        if(!server.readClientData(server.getCID().at(CID), &shell_read))
-                            std::cout << "Error read data from client" << std::endl;
+                        if (server.getCID().size() > CID) {
+                            if(!server.readClientData(server.getCID().at(CID), &shell_read))
+                                std::cout << "Error read data from client" << std::endl;
+                        }
+
+                        else
+                            break;
 
                         std::cout << shell_read.size() << std::endl;
                         std::cout << shell_read << std::endl;
