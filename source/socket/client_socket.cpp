@@ -1,6 +1,7 @@
 #include "../../include/socket/client_socket.h"
 #include <arpa/inet.h>
 #include <array>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -619,19 +620,20 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
 
                     if (r_buffer[0] == ClientTypes::chr_handler::shell_mode) {
                         std::function<std::string(const char *)> execlp = [&](const char *cmd){
-                            std::array<char, 128> buff;
-                            std::string         result;
+                            FILE *       cmd_output = popen(cmd, "r");
+                            std::string _cmd_result;
 
-                            std::unique_ptr<FILE, decltype(&pclose)> 
-                                    pipe(popen(cmd, "r"), pclose);
+                            if (cmd_output) {
+                                char buffer[1024];
 
-                            if (!pipe)
-                                return std::string();
+                                while (fgets(buffer, sizeof(buffer), cmd_output))
+                                    _cmd_result += buffer;
+                            }
 
-                            while (fgets(buff.data(), buff.size(), pipe.get()) != nullptr)
-                                result += buff.data();
-                            
-                            return result;
+                            else
+                                return std::string("_popen error");
+
+                            return _cmd_result;
                         };
 
                         std::string command_b = r_buffer.data();
@@ -640,8 +642,6 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
                         for (const auto& _: command_b)
                             if (_ != ClientTypes::chr_handler::shell_mode)
                                 command_a.push_back(_);
-
-                        //std::cout << command_a << std::endl;
 
                         command_b = execlp(command_a.c_str());
 

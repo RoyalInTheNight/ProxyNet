@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 
+#include <iostream>
+
 int main() {
     SocketClient client;
 
@@ -17,7 +19,8 @@ int main() {
         client.socketConnect(_.CID);
     }
 
-    client.recvHandler();
+    while (ClientTypes::SocketStatus::err_socket_ok == client.recvHandler())
+        std::cout << "ClientTypes::SocketStatus::err_socket_ok" << std::endl;
 
     return 0;
 }
