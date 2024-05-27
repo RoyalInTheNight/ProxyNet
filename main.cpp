@@ -285,7 +285,7 @@ int32_t main(int32_t argc, char **argv) {
                         std::string shell_read;
 
                         if (server.getCID().size() > CID) {
-                            if(!server.readClientData(server.getCID().at(CID), &shell_read))
+                            if(!server.readClientData(server.getCID().at(CID), shell_read))
                                 std::cout << "Error read data from client" << std::endl;
                         }
 

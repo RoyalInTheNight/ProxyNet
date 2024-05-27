@@ -8,22 +8,67 @@
 #include <thread>
 #include <vector>
 
-class __raw_pool {
+template<class __Fn, class __Tp> class pool {
 public:
-    __raw_pool(uint32_t threads = std::thread::hardware_concurrency());
+    pool<__Fn, __Tp>
+        (const uint32_t nthreads
+             = std::thread::hardware_concurrency()) {
+        for (uint32_t i = 0; i < nthreads; ++i) {
+            pool_.emplace_back([this] {
+                while (true) {
+                    __Fn task;
 
-    void add_thread(std::function<bool()>&);
+                    {
+                        std::unique_lock<std::mutex> lock(queue_mutex_pool_);
 
-    std::vector<bool> pool_thread_result() const;
+                        cv_pool_.wait(lock, [this] {
+                            return !task_pool_.empty() || stop_pool_;
+                        });
 
-    ~__raw_pool();
+                        if (stop_pool_ && task_pool_.empty())
+                            return false;
+
+                        task = task_pool_.front();
+                        task_pool_.pop();
+                    }
+
+                    result_pool_.push_back(task());
+                }
+            });
+        }
+    }
+
+    void add_thread(__Fn& task) {
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex_pool_);
+            task_pool_.emplace(task);
+        }
+
+        cv_pool_.notify_one();
+    }
+
+    void join() {
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex_pool_);
+            stop_pool_ = true;
+        }
+
+        cv_pool_.notify_all();
+
+        for (auto& thread: pool_)
+            thread.join();
+    }
+
+    std::vector<__Tp> pool_thread_result() const {
+        return this->result_pool_;
+    }
 
 private:
-    std::vector<std::thread>               pool_;
-    std::queue<std::function<bool()>> task_pool_;
-    std::mutex                 queue_mutex_pool_;
-    std::condition_variable             cv_pool_;
-    std::vector<bool>               result_pool_;
+    std::vector<std::thread>   pool_;
+    std::queue<__Fn>      task_pool_;
+    std::mutex     queue_mutex_pool_;
+    std::condition_variable cv_pool_;
+    std::vector<__Tp>   result_pool_;
 
     bool stop_pool_ = false;
 };

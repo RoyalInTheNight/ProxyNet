@@ -78,8 +78,6 @@ namespace sys {
         typedef SocketStatus                 status;
         typedef SocketType                     type;
         typedef ThreadMode                     mode;
-        typedef std::function<void()> recvHandler_t;
-
 
         status _status;
         type     _type;
@@ -143,7 +141,11 @@ namespace sys {
         bool getByFile(const std::string&, const std::vector<char>&);
         bool getByFile(const std::string&, const std::string&);
 
-        bool readClientData(const std::string&, std::string*);
+        bool readClientData(const std::string&, std::string&);
+        bool readClientData(const std::string&, std::vector<char>&);
+
+        bool downloadData(const std::string&, const std::string&);
+        bool downloadData(const std::string&, const std::vector<char>&);
 
         uint64_t sendAll(const void *, uint32_t);
         uint64_t sendAll(const std::vector<char>&);
@@ -223,7 +225,8 @@ namespace sys {
         bool getFileClient(const std::vector<char>&);
         bool getFileClient(const void *, uint32_t);
 
-        bool readClientData(std::string*);
+        bool readClientData(std::string&);
+        bool readClientData(std::vector<char>&);
     };
 }
 

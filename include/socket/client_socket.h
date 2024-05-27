@@ -45,16 +45,16 @@ namespace ClientTypes {
     #endif // _WIN32
 
     enum class SocketStatus : uint8_t {
-        err_socket_init       = 0x1,
-        err_socket_connect    = 0x2,
-        err_socket_fsend      = 0x3,
-        err_socket_frecv      = 0x4,
-        err_socket_send       = 0x5,
-        err_socket_recv       = 0x6,
-        err_socket_estabilish = 0x7,
-        err_socket_upload     = 0x8,
+        err_socket_init                     = 0x1,
+        err_socket_connect                  = 0x2,
+        err_socket_fsend                    = 0x3,
+        err_socket_frecv                    = 0x4,
+        err_socket_send                     = 0x5,
+        err_socket_recv                     = 0x6,
+        err_socket_estabilish               = 0x7,
+        err_socket_upload                   = 0x8,
         err_socket_upload_connection_broken = 0x9,
-        err_socket_ok         = 0x0
+        err_socket_ok                       = 0x0
     };
 
     enum class ThreadStatus : uint8_t {
@@ -142,8 +142,6 @@ public:
 
     uint32_t serverActivity();
     uint32_t serverList();
-
-    //~SocketClient();
 };
 
 #endif // __CLIENT_SOCKET

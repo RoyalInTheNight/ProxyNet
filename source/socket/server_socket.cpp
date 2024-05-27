@@ -182,7 +182,7 @@ bool sys::SocketServer::socketListenConnection() {
     }
 
     if (this->_mode == mode::multi_thread) {
-        __raw_pool pool;
+        pool<std::function<bool()>, bool> pool;
 
         Client client;
 
@@ -241,10 +241,11 @@ bool sys::SocketServer::socketListenConnection() {
 
         uint32_t t = 0;
 
-        for (uint32_t i = 0; i < pool.pool_thread_result().size(); i++) {
-                if (!pool.pool_thread_result()[i])
-                    t++;
-        }
+        pool.join();
+
+        for (uint32_t i = 0; i < pool.pool_thread_result().size(); i++)
+            if (!pool.pool_thread_result()[i])
+                t++;
 
         if (t == pool.pool_thread_result().size())
             return false;
@@ -368,16 +369,16 @@ bool sys::SocketServer::Client::isConnected() {
     return true;
 }
 
-bool sys::SocketServer::Client::readClientData(std::string *read_data) {
+bool sys::SocketServer::Client::readClientData(std::string& read_data) {
     std::vector<char> readBuffer(__INT16_MAX__);
 
-    *read_data = "";
+    read_data = "";
 
     if (this->isConnected()) {
         if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0))
             return false;
 
-        *read_data = readBuffer.data();
+        read_data = readBuffer.data();
 
         return true;
     }
@@ -386,7 +387,7 @@ bool sys::SocketServer::Client::readClientData(std::string *read_data) {
         if (::recv(this->cli_socket, readBuffer.data(), __INT16_MAX__, 0)WIN(<= 0)LINUX(<= 0))
             return false;
 
-        *read_data = readBuffer.data();
+        read_data = readBuffer.data();
 
         return true;
     }
@@ -394,7 +395,7 @@ bool sys::SocketServer::Client::readClientData(std::string *read_data) {
     return false;
 }
 
-bool sys::SocketServer::readClientData(const std::string& CID, std::string *read_data) {
+bool sys::SocketServer::readClientData(const std::string& CID, std::string& read_data) {
     for (auto& clList : listClient) {
         if (clList.getCID().data() == CID)
             return clList.readClientData(read_data);
@@ -496,7 +497,7 @@ void sys::SocketServer::keepAliveCID() {
 
         else {
             std::thread([&]() -> void {
-                if (!clList.readClientData(&keepReadData))
+                if (!clList.readClientData(keepReadData))
                     keepAliveStatus = false;
                 
                 else
@@ -555,14 +556,291 @@ bool sys::SocketServer::sendByFile(const std::string& CID, const std::string& pa
 }
 
 bool sys::SocketServer::Client::sendFileClient(const std::string& path) {
-    uint32_t  file_size = std::filesystem::file_size(path);
+    uint32_t  file_size = (std::filesystem::file_size(path) + 1);
     uint32_t block_size = 1024;
+
+    if (!std::filesystem::exists(path) ||
+        !std::filesystem::is_regular_file(path))
+        return false;
 
     std::ifstream file(path, std::ios::binary);
 
-    auto reader = [&](const std::ifstream& f_bin) -> std::vector<char> {
+    auto reader = [&](std::ifstream& f_bin) -> std::vector<char> {
+        std::vector<char> fbuffer(block_size);
         
+        if (WIN(this->cli_socket == INVALID_SOCKET)
+            LINUX(this->cli_socket < 0))
+            return std::vector<char>();
+
+        if (f_bin.fail())
+            return std::vector<char>();
+
+        int32_t _loss = 0;
+
+        while (file_size) {
+            if (file_size >= block_size) {
+                f_bin.read(fbuffer.data(), block_size);
+
+                file_size -= block_size;
+            }
+
+            else {
+                file.read(fbuffer.data(), (file_size - block_size));
+
+                file_size = 0;
+            }
+
+            _loss = ::send(this->cli_socket, fbuffer.data(), fbuffer.size(), 0);
+
+            if (_loss < 0) {
+                for (uint32_t i = 0;!_loss && !(i < 5); i++)
+                    _loss = ::send(this->cli_socket, fbuffer.data(), fbuffer.size(), 0);
+
+                if (_loss < 0)
+                    return std::vector<char>();
+            }
+        }
+
+        return fbuffer;
     };
+
+    if (!reader(file).size())
+        return false;
+
+    return true;
+}
+
+bool sys::SocketServer::Client::sendFileClient(const std::vector<char>& path) {
+    uint32_t  file_size = (std::filesystem::file_size(path.data()) + 1);
+    uint32_t block_size = 1024;
+
+    if (!std::filesystem::exists(path.data()) ||
+        !std::filesystem::is_regular_file(path.data()))
+        return false;
+
+    std::ifstream file(path.data(), std::ios::binary);
+
+    auto reader = [&](std::ifstream& f_bin) -> std::vector<char> {
+        std::vector<char> fbuffer(block_size);
+        
+        if (WIN(this->cli_socket == INVALID_SOCKET)
+            LINUX(this->cli_socket < 0))
+            return std::vector<char>();
+
+        if (f_bin.fail())
+            return std::vector<char>();
+
+        int32_t _loss = 0;
+
+        while (file_size) {
+            if (file_size >= block_size) {
+                f_bin.read(fbuffer.data(), block_size);
+
+                file_size -= block_size;
+            }
+
+            else {
+                file.read(fbuffer.data(), (file_size - block_size));
+
+                file_size = 0;
+            }
+
+            _loss = ::send(this->cli_socket, fbuffer.data(), fbuffer.size(), 0);
+
+            if (_loss < 0) {
+                for (uint32_t i = 0;!_loss && !(i < 5); i++)
+                    _loss = ::send(this->cli_socket, fbuffer.data(), fbuffer.size(), 0);
+
+                if (_loss < 0)
+                    return std::vector<char>();
+            }
+        }
+
+        return fbuffer;
+    };
+
+    if (!reader(file).size())
+        return false;
+
+    return true;
+}
+
+bool sys::SocketServer::Client::sendFileClient(const void *path, uint32_t size) {
+    if (path == nullptr)
+        return false;
+
+    uint32_t  file_size = (std::filesystem::file_size((char *)path) + 1);
+    uint32_t block_size = __INT16_MAX__;
+
+    if (!std::filesystem::exists((char *)path) ||
+        !std::filesystem::is_regular_file((char *)path))
+        return false;
+
+    std::ifstream file((char *)path, std::ios::binary);
+
+    auto reader = [&](std::ifstream& f_bin) -> std::vector<char> {
+        std::vector<char> fbuffer(block_size);
+        
+        if (WIN(this->cli_socket == INVALID_SOCKET)
+            LINUX(this->cli_socket < 0))
+            return std::vector<char>();
+
+        if (f_bin.fail())
+            return std::vector<char>();
+
+        int32_t _loss = 0;
+
+        while (file_size) {
+            if (file_size >= block_size) {
+                f_bin.read(fbuffer.data(), block_size);
+
+                file_size -= block_size;
+            }
+
+            else {
+                file.read(fbuffer.data(), (file_size - block_size));
+
+                file_size = 0;
+            }
+
+            _loss = ::send(this->cli_socket, fbuffer.data(), fbuffer.size(), 0);
+
+            if (_loss < 0) {
+                for (uint32_t i = 0;!_loss && !(i < 5); i++)
+                    _loss = ::send(this->cli_socket, fbuffer.data(), fbuffer.size(), 0);
+
+                if (_loss < 0)
+                    return std::vector<char>();
+            }
+        }
+
+        return fbuffer;
+    };
+
+    if (!reader(file).size())
+        return false;
+
+    return true;
+}
+
+bool sys::SocketServer::Client::getFileClient(const std::string& path) {
+    if (WIN(this->cli_socket == INVALID_SOCKET)
+        LINUX(this->cli_socket < 0))
+        return false;
+
+    if (!std::filesystem::exists(path) ||
+        !std::filesystem::is_regular_file(path))
+        return false;
+
+    uint32_t block_size = __INT16_MAX__;
+
+    std::vector<char> fbuffer(block_size);
+    std::ofstream   __file(path, std::ios::binary);
+
+    int32_t __loss     = 0;
+    int32_t bytes_read = 0;
+
+    while (true) {
+        bytes_read = ::recv(this->cli_socket, fbuffer.data(), block_size, 0);
+
+        if (bytes_read < block_size) {
+            fbuffer.resize(bytes_read);
+
+            __file.write(fbuffer.data(), fbuffer.size());
+        }
+
+        else if (bytes_read < 0) {
+            std::filesystem::remove(path);
+
+            return false;
+        }
+
+        else
+            __file.write(fbuffer.data(), fbuffer.size());
+    }
+
+    return true;
+}
+
+bool sys::SocketServer::Client::getFileClient(const std::vector<char>& path) {
+    if (WIN(this->cli_socket == INVALID_SOCKET)
+        LINUX(this->cli_socket < 0))
+        return false;
+
+    if (!std::filesystem::exists(path.data()) ||
+        !std::filesystem::is_regular_file(path.data()))
+        return false;
+
+    uint32_t block_size = __INT16_MAX__;
+
+    std::vector<char> fbuffer(block_size);
+    std::ofstream   __file(path.data(), std::ios::binary);
+
+    int32_t __loss     = 0;
+    int32_t bytes_read = 0;
+
+    while (true) {
+        bytes_read = ::recv(this->cli_socket, fbuffer.data(), block_size, 0);
+
+        if (bytes_read < block_size) {
+            fbuffer.resize(bytes_read);
+
+            __file.write(fbuffer.data(), fbuffer.size());
+        }
+
+        else if (bytes_read < 0) {
+            std::filesystem::remove(path.data());
+
+            return false;
+        }
+
+        else
+            __file.write(fbuffer.data(), fbuffer.size());
+    }
+
+    return true;
+}
+
+bool sys::SocketServer::Client::getFileClient(const void *path, uint32_t size) {
+    if (path == nullptr)
+        return false;
+    
+    if (WIN(this->cli_socket == INVALID_SOCKET)
+        LINUX(this->cli_socket < 0))
+        return false;
+
+    if (!std::filesystem::exists((char *)path) ||
+        !std::filesystem::is_regular_file((char *)path))
+        return false;
+
+    uint32_t block_size = __INT16_MAX__;
+
+    std::vector<char> fbuffer(block_size);
+    std::ofstream   __file((char *)path, std::ios::binary);
+
+    int32_t __loss     = 0;
+    int32_t bytes_read = 0;
+
+    while (true) {
+        bytes_read = ::recv(this->cli_socket, fbuffer.data(), block_size, 0);
+
+        if (bytes_read < block_size) {
+            fbuffer.resize(bytes_read);
+
+            __file.write(fbuffer.data(), fbuffer.size());
+        }
+
+        else if (bytes_read < 0) {
+            std::filesystem::remove((char *)path);
+
+            return false;
+        }
+
+        else
+            __file.write(fbuffer.data(), fbuffer.size());
+    }
+
+    return true;
 }
 
 uint64_t sys::SocketServer::sendAllFile(const std::string& path) {
