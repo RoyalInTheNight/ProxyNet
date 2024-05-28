@@ -2,6 +2,7 @@
 #include <arpa/inet.h>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -417,6 +418,145 @@ ClientTypes::SocketStatus SocketClient::uploadBy(const std::string& CID, const v
     return sstatus_t::err_socket_ok;
 }
 
+ClientTypes::SocketStatus SocketClient::downloadBy(const std::string& CID, const std::string& path) {
+    for (auto& _: server) {
+        if (_.CID == CID) {
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
+                return sstatus_t::err_socket_init;
+
+            if (!std::filesystem::exists(path) ||
+                !std::filesystem::is_regular_file(path))
+                return sstatus_t::err_socket_init;
+
+            uint32_t block_size = __INT16_MAX__;
+
+            std::vector<char> fbuffer(block_size);
+            std::ofstream   __file(path, std::ios::binary);
+
+            int32_t __loss     = 0;
+            int32_t bytes_read = 0;
+
+            while (true) {
+                bytes_read = ::recv(_.socket_, fbuffer.data(), block_size, 0);
+
+                if (bytes_read < block_size) {
+                    fbuffer.resize(bytes_read);
+
+                    __file.write(fbuffer.data(), fbuffer.size());
+                }
+
+                else if (bytes_read < 0) {
+                    std::filesystem::remove(path);
+
+                    return sstatus_t::err_socket_init;
+                }
+
+                else
+                    __file.write(fbuffer.data(), fbuffer.size());
+            }
+
+            return sstatus_t::err_socket_ok;
+        }
+    }
+
+    return sstatus_t::err_socket_init;
+}
+
+ClientTypes::SocketStatus SocketClient::downloadBy(const std::string& CID, const std::vector<char>& path) {
+    for (auto& _: server) {
+        if (_.CID == CID) {
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
+                return sstatus_t::err_socket_init;
+
+            if (!std::filesystem::exists(path.data()) ||
+                !std::filesystem::is_regular_file(path.data()))
+                return sstatus_t::err_socket_init;
+
+            uint32_t block_size = __INT16_MAX__;
+
+            std::vector<char> fbuffer(block_size);
+            std::ofstream   __file(path.data(), std::ios::binary);
+
+            int32_t __loss     = 0;
+            int32_t bytes_read = 0;
+
+            while (true) {
+                bytes_read = ::recv(_.socket_, fbuffer.data(), block_size, 0);
+
+                if (bytes_read < block_size) {
+                    fbuffer.resize(bytes_read);
+
+                    __file.write(fbuffer.data(), fbuffer.size());
+                }
+
+                else if (bytes_read < 0) {
+                    std::filesystem::remove(path.data());
+
+                    return sstatus_t::err_socket_init;
+                }
+
+                else
+                    __file.write(fbuffer.data(), fbuffer.size());
+            }
+
+            return sstatus_t::err_socket_ok;
+        }
+    }
+
+    return sstatus_t::err_socket_init;
+}
+
+ClientTypes::SocketStatus SocketClient::downloadBy(const std::string& CID, const void *path, const uint32_t size) {
+    if (path == nullptr ||
+        size == 0)
+        return sstatus_t::err_socket_init;
+    
+    for (auto& _: server) {
+        if (_.CID == CID) {
+            if (WIN(_.socket_ == INVALID_SOCKET)
+                LINUX(_.socket_ < 0))
+                return sstatus_t::err_socket_init;
+
+            if (!std::filesystem::exists((char *)path) ||
+                !std::filesystem::is_regular_file((char *)path))
+                return sstatus_t::err_socket_init;
+
+            uint32_t block_size = __INT16_MAX__;
+
+            std::vector<char> fbuffer(block_size);
+            std::ofstream   __file((char *)path, std::ios::binary);
+
+            int32_t __loss     = 0;
+            int32_t bytes_read = 0;
+
+            while (true) {
+                bytes_read = ::recv(_.socket_, fbuffer.data(), block_size, 0);
+
+                if (bytes_read < block_size) {
+                    fbuffer.resize(bytes_read);
+
+                    __file.write(fbuffer.data(), fbuffer.size());
+                }
+
+                else if (bytes_read < 0) {
+                    std::filesystem::remove((char *)path);
+
+                    return sstatus_t::err_socket_init;
+                }
+
+                else
+                    __file.write(fbuffer.data(), fbuffer.size());
+            }
+
+            return sstatus_t::err_socket_ok;
+        }
+    }
+
+    return sstatus_t::err_socket_init;
+}
+
 ClientTypes::SocketStatus SocketClient::uploadAll(const std::string& path) {
     if (server.size() > std::thread::hardware_concurrency()) {
         uint32_t server_size = server.size();
@@ -635,7 +775,7 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
                             if (_ != ClientTypes::chr_handler::upload_mode)
                                 command_a.push_back(_);
 
-                        if (sstatus_t::err_socket_ok != this->uploadBy(_.CID, command_a))
+                        if (sstatus_t::err_socket_ok != this->downloadBy(_.CID, command_a))
                             return false;
 
                         return true;

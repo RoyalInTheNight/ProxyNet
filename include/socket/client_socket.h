@@ -133,6 +133,10 @@ public:
     sstatus_t uploadAll(const std::vector<char>&);
     sstatus_t uploadAll(const void *, const uint32_t);
 
+    sstatus_t downloadBy(const std::string&, const std::string&);
+    sstatus_t downloadBy(const std::string&, const std::vector<char>&);
+    sstatus_t downloadBy(const std::string&, const void *, const uint32_t);
+
     sstatus_t recvHandler();
 
     void removeServer(const std::string&);

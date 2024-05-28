@@ -200,11 +200,17 @@ int32_t main(int32_t argc, char **argv) {
                 std::cout << "filename> ";
                 std::cin >> data;
 
-                //if (!server.updateBy(server.getCID().at(CID), data))
-                //    std::cout << "Send error" << std::endl;
+                if (data.size()) {
+                    std::string file;
 
-                //else
-                //    std::cout << "Message delivered" << std::endl;
+                    file.push_back(UPDATE_MODE_BYTE);
+
+                    if (!server.sendBy(server.getCID().at(CID), file))
+                        std::cout << "Send filename error" << std::endl;
+
+                    if (!server.sendByFile(server.getCID().at(CID), data))
+                        std::cout << "Send file error"     << std::endl;
+                }
             }
         }
 
@@ -224,10 +230,6 @@ int32_t main(int32_t argc, char **argv) {
 
             std::cout << "filename> ";
             std::cin >> data;
-
-            //uint32_t failed = server.updateAll(data);
-
-            //std::cout << "Message delivered" << "\n\tFails: " << failed << std::endl;
         }
 
         if (sh == "shell") {
