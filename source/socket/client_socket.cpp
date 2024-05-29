@@ -11,6 +11,7 @@
 #include <memory>
 #include <netinet/in.h>
 #include <sstream>
+#include <string>
 #include <sys/socket.h>
 #include <thread>
 #include <vector>
@@ -437,23 +438,21 @@ ClientTypes::SocketStatus SocketClient::downloadBy(const std::string& CID, const
             int32_t __loss     = 0;
             int32_t bytes_read = 0;
 
-            while (true) {
-                bytes_read = ::recv(_.socket_, fbuffer.data(), block_size, 0);
-
+            while ((bytes_read = ::recv(_.socket_, fbuffer.data(), block_size, 0)) > 0) {
                 if (bytes_read < block_size) {
                     fbuffer.resize(bytes_read);
 
                     __file.write(fbuffer.data(), fbuffer.size());
                 }
 
-                else if (bytes_read < 0) {
-                    std::filesystem::remove(path);
-
-                    return sstatus_t::err_socket_init;
-                }
-
                 else
                     __file.write(fbuffer.data(), fbuffer.size());
+            }
+
+            if (bytes_read < 0) {
+                std::filesystem::remove(path);
+
+                return sstatus_t::err_socket_init;
             }
 
             return sstatus_t::err_socket_ok;
@@ -464,48 +463,10 @@ ClientTypes::SocketStatus SocketClient::downloadBy(const std::string& CID, const
 }
 
 ClientTypes::SocketStatus SocketClient::downloadBy(const std::string& CID, const std::vector<char>& path) {
-    for (auto& _: server) {
-        if (_.CID == CID) {
-            if (WIN(_.socket_ == INVALID_SOCKET)
-                LINUX(_.socket_ < 0))
-                return sstatus_t::err_socket_init;
-
-            if (!std::filesystem::exists(path.data()) ||
-                !std::filesystem::is_regular_file(path.data()))
-                return sstatus_t::err_socket_init;
-
-            uint32_t block_size = __INT16_MAX__;
-
-            std::vector<char> fbuffer(block_size);
-            std::ofstream   __file(path.data(), std::ios::binary);
-
-            int32_t __loss     = 0;
-            int32_t bytes_read = 0;
-
-            while (true) {
-                bytes_read = ::recv(_.socket_, fbuffer.data(), block_size, 0);
-
-                if (bytes_read < block_size) {
-                    fbuffer.resize(bytes_read);
-
-                    __file.write(fbuffer.data(), fbuffer.size());
-                }
-
-                else if (bytes_read < 0) {
-                    std::filesystem::remove(path.data());
-
-                    return sstatus_t::err_socket_init;
-                }
-
-                else
-                    __file.write(fbuffer.data(), fbuffer.size());
-            }
-
-            return sstatus_t::err_socket_ok;
-        }
-    }
-
-    return sstatus_t::err_socket_init;
+    if (!path.size())
+        return sstatus_t::err_socket_init;
+    
+    return this->downloadBy(CID, std::string(path.data()));
 }
 
 ClientTypes::SocketStatus SocketClient::downloadBy(const std::string& CID, const void *path, const uint32_t size) {
@@ -513,48 +474,7 @@ ClientTypes::SocketStatus SocketClient::downloadBy(const std::string& CID, const
         size == 0)
         return sstatus_t::err_socket_init;
     
-    for (auto& _: server) {
-        if (_.CID == CID) {
-            if (WIN(_.socket_ == INVALID_SOCKET)
-                LINUX(_.socket_ < 0))
-                return sstatus_t::err_socket_init;
-
-            if (!std::filesystem::exists((char *)path) ||
-                !std::filesystem::is_regular_file((char *)path))
-                return sstatus_t::err_socket_init;
-
-            uint32_t block_size = __INT16_MAX__;
-
-            std::vector<char> fbuffer(block_size);
-            std::ofstream   __file((char *)path, std::ios::binary);
-
-            int32_t __loss     = 0;
-            int32_t bytes_read = 0;
-
-            while (true) {
-                bytes_read = ::recv(_.socket_, fbuffer.data(), block_size, 0);
-
-                if (bytes_read < block_size) {
-                    fbuffer.resize(bytes_read);
-
-                    __file.write(fbuffer.data(), fbuffer.size());
-                }
-
-                else if (bytes_read < 0) {
-                    std::filesystem::remove((char *)path);
-
-                    return sstatus_t::err_socket_init;
-                }
-
-                else
-                    __file.write(fbuffer.data(), fbuffer.size());
-            }
-
-            return sstatus_t::err_socket_ok;
-        }
-    }
-
-    return sstatus_t::err_socket_init;
+    return this->downloadBy(CID, std::string((char *)path));
 }
 
 ClientTypes::SocketStatus SocketClient::uploadAll(const std::string& path) {
@@ -770,6 +690,8 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
                     if (r_buffer[0] == ClientTypes::chr_handler::upload_mode) {
                         std::string command_b = r_buffer.data();
                         std::string command_a;
+
+                        std::cout << command_b << std::endl;
 
                         for (const auto& _: command_b)
                             if (_ != ClientTypes::chr_handler::upload_mode)

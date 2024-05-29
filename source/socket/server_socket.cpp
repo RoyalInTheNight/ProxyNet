@@ -556,12 +556,12 @@ bool sys::SocketServer::sendByFile(const std::string& CID, const std::string& pa
 }
 
 bool sys::SocketServer::Client::sendFileClient(const std::string& path) {
-    uint32_t  file_size = (std::filesystem::file_size(path) + 1);
-    uint32_t block_size = 1024;
-
     if (!std::filesystem::exists(path) ||
         !std::filesystem::is_regular_file(path))
         return false;
+    
+    uint32_t  file_size = (std::filesystem::file_size(path) + 1);
+    uint32_t block_size = 1024;
 
     std::ifstream file(path, std::ios::binary);
 
@@ -585,7 +585,7 @@ bool sys::SocketServer::Client::sendFileClient(const std::string& path) {
             }
 
             else {
-                file.read(fbuffer.data(), (file_size - block_size));
+                f_bin.read(fbuffer.data(), (file_size - block_size));
 
                 file_size = 0;
             }
