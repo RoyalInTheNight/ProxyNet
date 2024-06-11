@@ -18,6 +18,9 @@
 #include <cstdlib>
 
 #include "../logging/logging.h"
+#include "../crypto/sha.h"
+
+#define INT16 0x7fff
 
 enum LSAData {
     Socket = -0xff,
@@ -95,38 +98,40 @@ namespace ProxyNet {
     class Socket
          : public logging::Logging {
     private:
-        class Client {
+        class Client : logging::Logging {
         private:
             SocketData *sodata;
 
-            uint32_t       CID;
+            std::string    CID;
             uint32_t       KEY;
+            SSL            ssl;
 
             uint8_t       flag;
 
         public:
-            Client(SocketData *, const uint32_t);
+            Client(SocketData *, const std::string&, const SSL = SSL::SSL_Disable);
             Client(const Client&);
 
             [[nodiscard]] SocketData *getSOData() const;
+            [[nodiscard]] std::string    getCID() const;
 
             void setSOData(const uint32_t, const uint16_t, const uint32_t, const uint8_t);
 
-            virtual int32_t send(const std::string&);
-            virtual int32_t send(const std::vector<char>&);
-            virtual int32_t send(const void *, const uint32_t);
+            int32_t send(const std::string&);
+            int32_t send(const std::vector<char>&);
+            int32_t send(const void *, const uint32_t);
 
-            virtual int32_t read(const std::string&);
-            virtual int32_t read(const std::vector<char>&);
-            virtual int32_t read(const void *, const uint32_t);
+            int32_t read(std::string&);
+            int32_t read(std::vector<char>&);
+            int32_t read(void *, const uint32_t);
 
-            virtual int32_t sendFile(const std::string&);
-            virtual int32_t sendFile(const std::vector<char>&);
-            virtual int32_t sendFile(const void *, const uint32_t);
+            int32_t sendFile(const std::string&);
+            int32_t sendFile(const std::vector<char>&);
+            int32_t sendFile(const void *, const uint32_t);
 
-            virtual int32_t readFile(const std::string&);
-            virtual int32_t readFile(const std::vector<char>&);
-            virtual int32_t readFile(const void *, const uint32_t);
+            int32_t readFile(const std::string&);
+            int32_t readFile(const std::vector<char>&);
+            int32_t readFile(const void *, const uint32_t);
 
             void disconnect();
 
@@ -166,29 +171,29 @@ namespace ProxyNet {
         int32_t socketInit();
         int32_t socketAccept();
         
-        int32_t sendTo(const uint32_t, const str_t&);
-        int32_t sendTo(const uint32_t, const vec_t&);
-        int32_t sendTo(const uint32_t, const void_t, const uint32_t);
+        int32_t sendTo(const std::string&, const str_t&);
+        int32_t sendTo(const std::string&, const vec_t&);
+        int32_t sendTo(const std::string&, const void *, const uint32_t);
         int32_t sendAll(const str_t&);
         int32_t sendAll(const vec_t&);
-        int32_t sendAll(const void_t, const uint32_t);
+        int32_t sendAll(const void *, const uint32_t);
 
-        int32_t readTo(const uint32_t, str_t&);
-        int32_t readTo(const uint32_t, vec_t&);
-        int32_t readTo(const uint32_t, void_t, const uint32_t);
+        int32_t readTo(const std::string&, str_t&);
+        int32_t readTo(const std::string&, vec_t&);
+        int32_t readTo(const std::string&, void *, const uint32_t);
 
-        int32_t sendFileTo(const uint32_t, const str_t&);
-        int32_t sendFileTo(const uint32_t, const vec_t&);
-        int32_t sendFileTo(const uint32_t, const void_t, const uint32_t);
+        int32_t sendFileTo(const std::string&, const str_t&);
+        int32_t sendFileTo(const std::string&, const vec_t&);
+        int32_t sendFileTo(const std::string&, const void_t, const uint32_t);
         int32_t sendFileAll(const str_t&);
         int32_t sendFileAll(const vec_t&);
         int32_t sendFileAll(const void_t, const uint32_t);
 
-        int32_t readFileTo(const uint32_t, const str_t&);
-        int32_t readFileTo(const uint32_t, const vec_t&);
-        int32_t readFileTo(const uint32_t, const void_t, const uint32_t);
+        int32_t readFileTo(const std::string&, const str_t&);
+        int32_t readFileTo(const std::string&, const vec_t&);
+        int32_t readFileTo(const std::string&, const void_t, const uint32_t);
 
-        void disconnectTo(const uint32_t);
+        void disconnectTo(const std::string&);
         void disconnectAll();
 
         ~Socket();

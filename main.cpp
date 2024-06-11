@@ -40,6 +40,8 @@ int32_t main(int32_t argc, char **argv) {
         logging::LoggingStatus::loggingStdout
     );
 
+    server.setThreadStatus(ProxyNet::ThreadStatus::threadEnable);
+
     if (!server.socketInit())
         return -0x2;
 
