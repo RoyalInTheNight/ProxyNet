@@ -120,12 +120,12 @@ int32_t ProxyNet::Socket::socketInit() {
     if (result < 0) {
         this->logging("[FAILED]Func socketInit(): listen failed");
 
-        return LSAData::SocketBind;
+        return LSAData::SocketListen;
     }
 
     this->logging("[  OK  ]Func socketInit(): listen ok");
 
-    return 0x0;
+    return LSAData::SocketOK;
 }
 
 #include <ctime>
@@ -138,15 +138,18 @@ int32_t ProxyNet::Socket::socketAccept() {
         return LSAData::SocketSOData;
     }
 
+    this->logging("[  OK  ]Func socketAccept(): SOData ok");
+
     if (this->sodata->socket < 0) {
-        this->logging("[  OK  ]Func socketAccept(): invalid socket");
+        this->logging("[FAILED]Func socketAccept(): invalid socket");
 
         return LSAData::Socket;
     }
 
+    this->logging("[  OK  ]Func socketAccept(): socket ok");
+
     if (this->thread == ThreadStatus::threadDisable) {
         ESData ESD;
-
         sha256 sha;
 
         srand(
@@ -165,15 +168,22 @@ int32_t ProxyNet::Socket::socketAccept() {
             )
         );
 
+        socket_t accept_socket = ::accept(
+            this->sodata->socket,
+            nullptr,
+            nullptr
+        );
+
+        if (accept_socket < 0) {
+            this->logging("[FAILED]Func socketAccept(): accept failed");
+
+            return LSAData::SocketAccept;
+        }
+
         list.push_back(
             Client(
                 new SocketData(
-                    ::accept(
-                        this->sodata->socket, 
-                        nullptr, 
-                        nullptr
-                    ),
-
+                    accept_socket,
                     AF_INET
                 ),
 
@@ -182,7 +192,7 @@ int32_t ProxyNet::Socket::socketAccept() {
             )
         );
 
-        if (
+        /*if (
             list[
                 clientCount
             ].getSOData()->socket < 0
@@ -190,7 +200,7 @@ int32_t ProxyNet::Socket::socketAccept() {
             this->logging("[FAILED]Func socketAccept(): accept failed");
 
             return LSAData::SocketAccept;
-        }
+        }*/
 
         this->logging("[  OK  ]Func socketAccept(): accept ok");
 
@@ -243,7 +253,7 @@ int32_t ProxyNet::Socket::socketAccept() {
 
         this->clientCount++;
 
-        return 0x1;
+        return LSAData::SocketOK;
     }
 
     if (this->thread == ThreadStatus::threadEnable) {
@@ -254,7 +264,6 @@ int32_t ProxyNet::Socket::socketAccept() {
         for (uint32_t i = 0; i < std::thread::hardware_concurrency(); i++) {
             std::function<bool()> pool_emp = [&]() -> bool {
                 ESData ESD;
-
                 sha256 sha;
 
                 srand(
@@ -273,15 +282,22 @@ int32_t ProxyNet::Socket::socketAccept() {
                     )
                 );
 
+                socket_t accept_socket = ::accept(
+                    this->sodata->socket,
+                    nullptr,
+                    nullptr
+                );
+
+                if (accept_socket < 0) {
+                    this->logging("[FAILED]Func socketAccept(): accept failed");
+
+                    return LSAData::SocketAccept;
+                }
+
                 list.push_back(
                     Client(
                         new SocketData(
-                            ::accept(
-                                this->sodata->socket, 
-                                nullptr,
-                                nullptr
-                            ),
-
+                            accept_socket,
                             AF_INET
                         ),
 
@@ -290,7 +306,7 @@ int32_t ProxyNet::Socket::socketAccept() {
                     )
                 );
 
-                if (
+                /*if (
                     list[
                         clientCount
                     ].getSOData()->socket < 0
@@ -298,7 +314,7 @@ int32_t ProxyNet::Socket::socketAccept() {
                     this->logging("[FAILED]Func socketAccept(): accept failed");
 
                     return LSAData::SocketAccept;
-                }
+                }*/
 
                 this->logging("[  OK  ]Func socketAccept(): accept ok");
 
@@ -351,7 +367,7 @@ int32_t ProxyNet::Socket::socketAccept() {
 
                 this->clientCount++;
 
-                return true;
+                return LSAData::SocketOK;
             };
 
             TPool.add_thread(pool_emp);
@@ -364,7 +380,7 @@ int32_t ProxyNet::Socket::socketAccept() {
                 this->logging("[FAILED]Thread fail");
     }
 
-    return -0x2;
+    return LSAData::SocketOK;
 }
 
 int32_t ProxyNet::Socket::sendTo(const std::string& CID, const std::string& message) {

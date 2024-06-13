@@ -40,13 +40,16 @@ int32_t main(int32_t argc, char **argv) {
         logging::LoggingStatus::loggingStdout
     );
 
-    server.setThreadStatus(ProxyNet::ThreadStatus::threadEnable);
+    server.setThreadStatus(ProxyNet::ThreadStatus::threadDisable);
 
     if (!server.socketInit())
         return -0x2;
 
-    if (!server.socketAccept())
-        return -0x3;
+    if (server.socketAccept() >= 0) {
+        std::cout << "socket accept called" << std::endl;
+
+        return -0x2;
+    }
 
     return 0;
 }

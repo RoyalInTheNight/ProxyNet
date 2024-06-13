@@ -32,7 +32,8 @@ enum LSAData {
     SocketSendFile,
     SocketReadFile,
     SocketSOData,
-    SocketEstabilish
+    SocketEstabilish,
+    SocketOK = 0x1
 };
 
 namespace ProxyNet {
@@ -73,7 +74,7 @@ namespace ProxyNet {
             socket = socket_;
         }
 
-        SocketData(int32_t socket_, const int32_t af_family) {
+        SocketData(socket_t socket_, const int32_t af_family) {
             socket            = socket_;
             header.sin_family = af_family;
         }
