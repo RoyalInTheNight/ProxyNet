@@ -38,7 +38,7 @@ public:
         }
     }
 
-    void add_thread(__Fn& task) {
+    void add_thread(__Fn task) {
         {
             std::unique_lock<std::mutex> lock(queue_mutex_pool_);
             task_pool_.emplace(task);

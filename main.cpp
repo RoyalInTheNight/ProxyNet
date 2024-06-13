@@ -5,6 +5,8 @@
 #include <string>
 #include <sys/socket.h>
 
+#include "include/thread/thread.h"
+
 int32_t main(int32_t argc, char **argv) {
     if (argc < 2) {
         std::cout << argv[0] << " <port>" << std::endl;
@@ -40,7 +42,7 @@ int32_t main(int32_t argc, char **argv) {
         logging::LoggingStatus::loggingStdout
     );
 
-    server.setThreadStatus(ProxyNet::ThreadStatus::threadDisable);
+    server.setThreadStatus(ProxyNet::ThreadStatus::threadEnable);
 
     if (!server.socketInit())
         return -0x2;

@@ -263,6 +263,24 @@ int32_t ProxyNet::Socket::socketAccept() {
 
         for (uint32_t i = 0; i < std::thread::hardware_concurrency(); i++) {
             std::function<bool()> pool_emp = [&]() -> bool {
+                std::thread::id tid = std::this_thread::get_id();
+
+                uint32_t tid_uint32 = *static_cast<
+                    int32_t *
+                >(
+                    static_cast<
+                        void *
+                    >(
+                        &tid
+                    )
+                );
+
+                this->logging(
+                    "[ INFO ]Pool accept thread id - " + std::to_string(
+                        tid_uint32
+                    )
+                );
+
                 ESData ESD;
                 sha256 sha;
 
