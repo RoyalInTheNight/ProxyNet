@@ -1,7 +1,7 @@
 //
 // Created by MikoG on 07.10.2023.
 //
-
+#ifndef _WIN32
 #include "../../include/socket/server_socket.h"
 #include <cstddef>
 #include <cstdint>
@@ -1048,3 +1048,4 @@ void sys::SocketServer::updateClient() {
                 else
                     log.close();
             }*/
+#endif // endif _WIN32
