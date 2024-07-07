@@ -709,21 +709,14 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
                             std::string _cmd_result;
 
                             if (cmd_output) {
-                                int fd = fileno(cmd_output);
-                                fcntl(fd, F_SETFL, O_NONBLOCK);
-
                                 char buffer[1024];
 
-                                while (true) {
-                                    ssize_t read_size = read(fd, buffer, sizeof(buffer));
+                                while (!feof(cmd_output)) {
+                                    if (fgets(buffer, sizeof(buffer), cmd_output) != NULL)
+                                        _cmd_result += buffer;
 
-                                    if (read_size == -1) {
+                                    else
                                         break;
-                                    } else if (read_size == 0) {
-                                        break;
-                                    } else {
-                                        _cmd_result.append(buffer, read_size);
-                                    }
                                 }
 
                                 pclose(cmd_output);
