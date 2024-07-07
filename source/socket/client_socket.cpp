@@ -16,6 +16,8 @@
 #include <thread>
 #include <vector>
 
+const char is_connected_ = (char)IS_CONNECTED;
+
 SocketClient::SocketClient(const std::string& address, const uint16_t port) {
     ClientTypes::ServerConnectionData server_connection;
 
@@ -745,6 +747,13 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
 
                     if (r_buffer[0] == ClientTypes::chr_handler::ping_mode) {
 
+                    }
+
+                    if (r_buffer[0] == is_connected_) {
+                        std::vector<char> is_connected_buffer = {(char)is_connected_};
+
+                        if (send(_.socket, is_connected_buffer.c_str(), is_connected_buffer.size(), 0) < 0)
+                            return false;
                     }
                 }
 
