@@ -35,6 +35,7 @@
 #define KEEP_ALIVE_PING   0xfb
 #define CLOUD_CLIENT_BYTE 0xee
 #define PROXY_MODE_FAILED 0xef
+#define IS_CONNECTED      0xed
 
 namespace sys {
     enum class SocketStatus : uint8_t {
