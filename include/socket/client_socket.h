@@ -80,9 +80,10 @@ namespace ClientTypes {
     }
 
     namespace chr_handler {
-        const char shell_mode  =  SHELL_MODE_BYTE;
-        const char upload_mode = UPDATE_MODE_BYTE;
-        const char ping_mode   =  KEEP_ALIVE_PING;
+        const char shell_mode   = SHELL_MODE_BYTE;
+        const char upload_mode  = UPDATE_MODE_BYTE;
+        const char ping_mode    = KEEP_ALIVE_PING;
+        const char is_connected = IS_CONNECTED;
     }
 }
 
