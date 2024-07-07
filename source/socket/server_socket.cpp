@@ -874,7 +874,7 @@ bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
 
     char *msg = (char *)message;
 
-    if (this->isConnected()) {
+    /*if (this->isConnected()) {
         result = ::send(cli_socket, msg, size, 0);
 
         if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
@@ -883,6 +883,7 @@ bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
 
     if (!this->connectClient())
         return false;
+    */
 
     result = ::send(cli_socket, msg, size, 0);
 
@@ -895,7 +896,7 @@ bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
 bool sys::SocketServer::Client::sendClientData(const std::vector<char>& message) {
     int32_t result = 0;
 
-    if (this->isConnected()) {
+    /*if (this->isConnected()) {
         result = ::send(cli_socket, message.data(), message.size(), 0);
 
         if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
@@ -903,7 +904,7 @@ bool sys::SocketServer::Client::sendClientData(const std::vector<char>& message)
     }
 
     if (!this->connectClient())
-        return false;
+        return false;*/
 
     result = ::send(cli_socket, message.data(), message.size(), 0);
 
@@ -916,7 +917,7 @@ bool sys::SocketServer::Client::sendClientData(const std::vector<char>& message)
 bool sys::SocketServer::Client::sendClientData(const std::string& message) {
     int32_t result = 0;
 
-    if (this->isConnected()) {
+    /*if (this->isConnected()) {
         result = ::send(cli_socket, message.c_str(), message.size(), 0);
 
         if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
@@ -926,7 +927,7 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
     }
 
     if (!this->connectClient())
-        return false;
+        return false;*/
 
     result = ::send(cli_socket, message.c_str(), message.size(), 0);
 
