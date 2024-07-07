@@ -711,8 +711,15 @@ ClientTypes::SocketStatus SocketClient::recvHandler() {
                             if (cmd_output) {
                                 char buffer[1024];
 
-                                while (fgets(buffer, sizeof(buffer), cmd_output))
-                                    _cmd_result += buffer;
+                                while (!feof(cmd_output)) {
+                                    if (fgets(buffer, sizeof(buffer), cmd_output) != NULL)
+                                        _cmd_result += buffer;
+
+                                    else
+                                        break;
+                                }
+
+                                pclose(cmd_output);
                             }
 
                             else
