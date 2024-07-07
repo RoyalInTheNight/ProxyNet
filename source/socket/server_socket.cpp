@@ -358,14 +358,14 @@ bool sys::SocketServer::Client::disconnectClient() {
 }
 
 bool sys::SocketServer::Client::isConnected() {
-    /*sockaddr_storage storage;
+    sockaddr_storage storage;
 
     SockLen_t storage_size = sizeof(storage);
 
     if (getpeername(this->cli_socket, (sockaddr *)&storage, &storage_size) == -1)
-        return false;*/
+        return false;
 
-    std::vector<char> cli_buffer = {(char)IS_CONNECTED};
+    /*std::vector<char> cli_buffer = {(char)IS_CONNECTED};
     std::vector<char> buffer(1024);
     
     if (send(this->cli_socket, cli_buffer.c_str(), cli_buffer.size(), 0) < 0)
@@ -376,7 +376,8 @@ bool sys::SocketServer::Client::isConnected() {
 
     if (buffer[0] != cli_buffer[0])
         return false;
-
+    */
+    
     return true;
 }
 
@@ -874,50 +875,55 @@ bool sys::SocketServer::Client::sendClientData(void *message, uint32_t size) {
 
     char *msg = (char *)message;
 
-    /*if (this->isConnected()) {
+    if (this->isConnected()) {
         result = ::send(cli_socket, msg, size, 0);
 
         if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
             return false;
+
+        return true;
     }
 
     if (!this->connectClient())
         return false;
-    */
 
-    result = ::send(cli_socket, msg, size, 0);
+    /*result = ::send(cli_socket, msg, size, 0);
 
     if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
         return false;
+    */
 
-    return true;
+    return false;
 }
 
 bool sys::SocketServer::Client::sendClientData(const std::vector<char>& message) {
     int32_t result = 0;
 
-    /*if (this->isConnected()) {
+    if (this->isConnected()) {
         result = ::send(cli_socket, message.data(), message.size(), 0);
 
         if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
             return false;
+
+        return true;
     }
 
     if (!this->connectClient())
-        return false;*/
+        return false;
 
-    result = ::send(cli_socket, message.data(), message.size(), 0);
+    /*result = ::send(cli_socket, message.data(), message.size(), 0);
 
     if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
         return false;
-
-    return true;
+    */
+    
+    return false;
 }
 
 bool sys::SocketServer::Client::sendClientData(const std::string& message) {
     int32_t result = 0;
 
-    /*if (this->isConnected()) {
+    if (this->isConnected()) {
         result = ::send(cli_socket, message.c_str(), message.size(), 0);
 
         if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
@@ -927,14 +933,15 @@ bool sys::SocketServer::Client::sendClientData(const std::string& message) {
     }
 
     if (!this->connectClient())
-        return false;*/
+        return false;
 
-    result = ::send(cli_socket, message.c_str(), message.size(), 0);
+    /*result = ::send(cli_socket, message.c_str(), message.size(), 0);
 
     if (WIN(result == SOCKET_ERROR)LINUX(result < 0))
         return false;
-
-    return true;
+    */
+    
+    return false;
 }
 
 void sys::SocketServer::removeClient(const std::string& CID) {
