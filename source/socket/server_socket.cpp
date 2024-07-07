@@ -358,11 +358,23 @@ bool sys::SocketServer::Client::disconnectClient() {
 }
 
 bool sys::SocketServer::Client::isConnected() {
-    sockaddr_storage storage;
+    /*sockaddr_storage storage;
 
     SockLen_t storage_size = sizeof(storage);
 
     if (getpeername(this->cli_socket, (sockaddr *)&storage, &storage_size) == -1)
+        return false;*/
+
+    std::vector<char> cli_buffer = {(char)IS_CONNECTED};
+    std::vector<char> buffer(1024);
+    
+    if (send(this->cli_socket, cli_buffer.c_str(), cli_buffer.size(), 0) < 0)
+        return false;
+
+    if (recv(this->cli_socket, buffer.data(), buffer.size(), 0) <= 0)
+        return false;
+
+    if (buffer[0] != cli_buffer[0])
         return false;
 
     return true;
